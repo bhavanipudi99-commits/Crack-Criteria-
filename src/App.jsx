@@ -803,7 +803,11 @@ export default function App() {
   const updateCell = (rowId, cellIndex, field, val) => setBuilderCriteria(p => p.map(r => {
     if (r.id !== rowId) return r;
     const cells = [...r.cells];
-    cells[cellIndex] = { ...cells[cellIndex], [field]: val };
+    let tiles = cells[cellIndex].tiles;
+    if (field === 'text' && tiles.length === 1) {
+      tiles = [{ ...tiles[0], label: val }];
+    }
+    cells[cellIndex] = { ...cells[cellIndex], [field]: val, tiles };
     return { ...r, cells };
   }));
   const updateTileLabel = (rowId, cellIndex, ti, val) => setBuilderCriteria(p => p.map(r => {
@@ -811,7 +815,13 @@ export default function App() {
     const cells = [...r.cells];
     const tiles = [...cells[cellIndex].tiles];
     tiles[ti] = { ...tiles[ti], label: val };
-    cells[cellIndex] = { ...cells[cellIndex], tiles };
+    
+    let cellText = cells[cellIndex].text;
+    if (tiles.length === 1 && ti === 0) {
+      cellText = val;
+    }
+    
+    cells[cellIndex] = { ...cells[cellIndex], text: cellText, tiles };
     return { ...r, cells };
   }));
 
@@ -1948,12 +1958,17 @@ export default function App() {
                       <div className="flex-1 flex gap-4 overflow-x-auto">
                         {row.cells.map((cell, cellIndex) => (
                           <div key={cellIndex} className={`flex-1 min-w-[200px] border rounded-xl p-2 flex flex-col gap-2 ${row.isHeading ? (row.headingType === 'sub' ? 'border-amber-200 bg-amber-50/50' : 'border-amber-400 bg-amber-100/80 shadow-inner') : 'border-slate-100 bg-slate-50'}`}>
-                            <input type="text" value={cell.text} placeholder={row.isHeading ? `${table.columnHeaders[cellIndex]} heading...` : `${table.columnHeaders[cellIndex]} text`}
-                              onChange={e => updateCell(row.id, cellIndex, 'text', e.target.value)}
-                              className={`w-full px-2 py-1.5 border rounded-lg focus:outline-none focus:border-violet-400 ${row.isHeading ? (row.headingType === 'sub' ? 'border-amber-300 bg-white font-bold text-[11px] text-amber-700 uppercase shadow-sm' : 'border-amber-500 bg-white font-black text-[12px] text-amber-900 uppercase shadow-md') : 'border-slate-200 bg-white font-medium text-[11px]'}`} />
-                            
-                            {!row.isHeading && (
+                            {row.isHeading ? (
+                              <input type="text" value={cell.text} placeholder={`${table.columnHeaders[cellIndex]} heading...`}
+                                onChange={e => updateCell(row.id, cellIndex, 'text', e.target.value)}
+                                className={`w-full px-2 py-1.5 border rounded-lg focus:outline-none focus:border-violet-400 ${row.headingType === 'sub' ? 'border-amber-300 bg-white font-bold text-[11px] text-amber-700 uppercase shadow-sm' : 'border-amber-500 bg-white font-black text-[12px] text-amber-900 uppercase shadow-md'}`} />
+                            ) : (
                               <>
+                                {cell.tiles.length > 1 && (
+                                  <input type="text" value={cell.text} placeholder={`${table.columnHeaders[cellIndex]} full text...`}
+                                    onChange={e => updateCell(row.id, cellIndex, 'text', e.target.value)}
+                                    className="w-full px-2 py-1.5 border border-slate-200 bg-white font-medium text-[11px] rounded-lg focus:outline-none focus:border-violet-400 mb-2" />
+                                )}
                                 <div className="flex items-center gap-2 mt-1">
                                   <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider">Tiles:</span>
                                   {[1, 2].map(n => (
@@ -1963,7 +1978,7 @@ export default function App() {
                                     </button>
                                   ))}
                                 </div>
-                                <div className="flex flex-col gap-2">
+                                <div className="flex flex-col gap-2 mt-1.5">
                                   {cell.tiles.map((tile, ti) => (
                                     <div key={tile.id} className="flex flex-col p-1.5 border border-slate-200 rounded bg-slate-50/50 shadow-sm">
                                       <div className="flex items-center gap-1.5">
