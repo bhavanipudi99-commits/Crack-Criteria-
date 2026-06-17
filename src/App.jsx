@@ -1514,7 +1514,7 @@ export default function App() {
                                
                                return (
                                  <td key={cellIndex} className={`p-2 border-r transition-colors ${cellBg}`}>
-                                    {!(cell.tiles && cell.tiles.length === 1 && cell.tiles[0].label.trim() === (cell.text || '').trim()) && (
+                                    {(!cell.tiles || cell.tiles.length === 0) && (
                                       <p className="text-[11px] font-semibold text-slate-700 leading-tight mb-1">{cell.text}</p>
                                     )}
                                     {hasTiles && (
@@ -1704,7 +1704,7 @@ export default function App() {
                                                         <tr key={row.id} className="border-b border-indigo-50 last:border-0 hover:bg-slate-50/30">
                                                           {(row.cells||[]).map((c, ci) => (
                                                             <td key={ci} className="p-2 border border-indigo-50/50 align-top">
-                                                              {!(c.tiles && c.tiles.length === 1 && c.tiles[0].label.trim() === (c.text || '').trim()) && (
+                                                              {(!c.tiles || c.tiles.length === 0) && (
                                                                 <div className="font-extrabold text-indigo-900 border-b border-indigo-50/50 pb-1 mb-1.5 leading-tight text-[10px]">{c.text || 'Row'}</div>
                                                               )}
                                                               <div className="flex flex-col gap-1">
