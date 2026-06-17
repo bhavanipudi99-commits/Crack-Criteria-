@@ -907,6 +907,20 @@ export default function App() {
     setBuilderCriteria(p => [...p, { id, cells, isHeading: false }]); 
   };
 
+  const insertBlankCrit = (index) => {
+    const table = criteriaTables.find(t => t.id === selectedTableId);
+    if (!table) return;
+    const id = uid('crit'); 
+    const cells = Array.from({ length: table.columnCount }).map(() => ({
+      text: '', category: '', tiles: [{ id: uid('tile'), label: '' }]
+    }));
+    setBuilderCriteria(p => {
+      const newArr = [...p];
+      newArr.splice(index, 0, { id, cells, isHeading: false });
+      return newArr;
+    });
+  };
+
   const saveToTable = () => {
     const table = criteriaTables.find(t => t.id === selectedTableId);
     if (!table) return;
@@ -2050,6 +2064,7 @@ export default function App() {
                           </select>
                         )}
                         <button onClick={() => removeCrit(row.id)} className="text-slate-400 hover:text-rose-500 text-[10px] font-bold uppercase border border-slate-200 rounded px-2 py-1 bg-white hover:border-rose-200 hover:bg-rose-50">Remove</button>
+                        <button onClick={() => insertBlankCrit(ci + 1)} className="text-violet-500 hover:text-violet-700 text-[10px] font-bold uppercase border border-violet-200 rounded px-2 py-1 bg-violet-50 hover:border-violet-300 hover:bg-violet-100 mt-2">+ Insert</button>
                       </div>
                     </div>
                   </div>
