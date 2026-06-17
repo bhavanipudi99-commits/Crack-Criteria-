@@ -1681,64 +1681,70 @@ export default function App() {
                                           </div>
                                           
                                           {isTableExpanded && (
-                                            <div className="p-1.5 space-y-2 bg-slate-50/50 divide-y divide-indigo-50">
-                                              {table.rows.map(row => {
-                                                if (row.isHeading) {
-                                                  const isSub = row.headingType === 'sub';
-                                                  return (
-                                                    <div key={row.id} className={`py-1.5 px-2 grid gap-1 border-y ${isSub ? 'bg-amber-50/50 border-amber-100/50' : 'bg-amber-100/80 border-amber-200'}`} style={{ gridTemplateColumns: `repeat(${table.columnCount || 1}, minmax(0, 1fr))` }}>
-                                                      {row.cells.map((cell, ci) => (
-                                                        <div key={ci} className="text-center flex items-center justify-center">
-                                                          <p className={`${isSub ? 'text-[8px] font-bold text-amber-600' : 'text-[9px] font-black text-amber-800'} uppercase tracking-widest`}>{cell.text}</p>
-                                                        </div>
-                                                      ))}
-                                                    </div>
-                                                  );
-                                                }
-                                                return (
-                                                  <div key={row.id} className="text-[10px] text-slate-700 grid gap-2 py-1.5" style={{ gridTemplateColumns: `repeat(${table.columnCount || 1}, minmax(0, 1fr))` }}>
-                                                    {(row.cells||[]).map((c, ci) => (
-                                                      <div key={ci} className="flex flex-col gap-1 border border-slate-200 rounded bg-white p-1.5 shadow-sm h-full">
-                                                        <div className="font-extrabold text-indigo-900 border-b border-indigo-50 pb-1 mb-0.5 leading-tight">{c.text || 'Row'}</div>
-                                                        <div className="flex flex-col gap-1 mt-auto">
-                                                          {(c.tiles||[]).map(t => {
-                                                            const isChecked = selectedCanvasId && activeComposerQuestionId && canvasConfigs.find(cv=>cv.id===selectedCanvasId)?.questions.find(q=>q.id===activeComposerQuestionId)?.selectedTileIds.includes(t.id);
-                                                            return (
-                                                              <div key={t.id} className="flex flex-col gap-0.5">
-                                                                <div className={`flex items-start gap-1.5 p-1 rounded transition-colors ${isChecked ? 'bg-teal-50' : 'hover:bg-slate-50'}`}>
-                                                                  {selectedCanvasId && activeComposerQuestionId && (
-                                                                    <input type="checkbox" className="w-3 h-3 accent-teal-500 mt-0.5 flex-shrink-0 cursor-pointer"
-                                                                      checked={isChecked || false}
-                                                                      onChange={() => toggleTileInCanvas(t.id, selectedCanvasId, activeComposerQuestionId)} />
-                                                                  )}
-                                                                  <span className={`text-[9px] leading-tight ${isChecked ? 'font-black text-teal-800' : 'font-semibold text-slate-600'}`}>{t.label}</span>
-                                                                </div>
-                                                                {t.subtiles?.length > 0 && (
-                                                                  <div className="flex flex-col gap-0.5 pl-3 border-l-2 border-slate-100 ml-1.5 mt-0.5">
-                                                                    {t.subtiles.map(sub => {
-                                                                      const subChecked = selectedCanvasId && activeComposerQuestionId && canvasConfigs.find(cv=>cv.id===selectedCanvasId)?.questions.find(q=>q.id===activeComposerQuestionId)?.selectedTileIds.includes(sub.id);
-                                                                      return (
-                                                                        <div key={sub.id} className={`flex items-start gap-1.5 p-1 rounded transition-colors ${subChecked ? 'bg-indigo-50' : 'hover:bg-slate-50'}`}>
-                                                                          {selectedCanvasId && activeComposerQuestionId && (
-                                                                            <input type="checkbox" className="w-2.5 h-2.5 accent-indigo-500 mt-0.5 flex-shrink-0 cursor-pointer"
-                                                                              checked={subChecked || false}
-                                                                              onChange={() => toggleTileInCanvas(sub.id, selectedCanvasId, activeComposerQuestionId)} />
-                                                                          )}
-                                                                          <span className={`text-[8px] leading-tight ${subChecked ? 'font-black text-indigo-800' : 'font-semibold text-slate-500'}`}>↳ {sub.label}</span>
+                                            <div className="p-1.5 bg-slate-50/50">
+                                              <div className="overflow-x-auto rounded border border-indigo-100 shadow-sm">
+                                                <table className="w-full text-left border-collapse bg-white table-fixed">
+                                                  <tbody>
+                                                    {table.rows.map(row => {
+                                                      if (row.isHeading) {
+                                                        const isSub = row.headingType === 'sub';
+                                                        return (
+                                                          <tr key={row.id} className={isSub ? 'bg-amber-50/50' : 'bg-amber-100/80'}>
+                                                            {row.cells.map((cell, ci) => (
+                                                              <td key={ci} className={`px-2 py-1.5 border border-indigo-50/50 text-center ${isSub ? 'text-[8px] font-bold text-amber-600' : 'text-[9px] font-black text-amber-800'} uppercase tracking-widest`}>
+                                                                {cell.text}
+                                                              </td>
+                                                            ))}
+                                                          </tr>
+                                                        );
+                                                      }
+                                                      return (
+                                                        <tr key={row.id} className="border-b border-indigo-50 last:border-0 hover:bg-slate-50/30">
+                                                          {(row.cells||[]).map((c, ci) => (
+                                                            <td key={ci} className="p-2 border border-indigo-50/50 align-top">
+                                                              <div className="font-extrabold text-indigo-900 border-b border-indigo-50/50 pb-1 mb-1.5 leading-tight text-[10px]">{c.text || 'Row'}</div>
+                                                              <div className="flex flex-col gap-1">
+                                                                {(c.tiles||[]).map(t => {
+                                                                  const isChecked = selectedCanvasId && activeComposerQuestionId && canvasConfigs.find(cv=>cv.id===selectedCanvasId)?.questions.find(q=>q.id===activeComposerQuestionId)?.selectedTileIds.includes(t.id);
+                                                                  return (
+                                                                    <div key={t.id} className="flex flex-col gap-0.5">
+                                                                      <div className={`flex items-start gap-1.5 p-1 rounded transition-colors ${isChecked ? 'bg-teal-50' : 'hover:bg-slate-50'}`}>
+                                                                        {selectedCanvasId && activeComposerQuestionId && (
+                                                                          <input type="checkbox" className="w-3 h-3 accent-teal-500 mt-0.5 flex-shrink-0 cursor-pointer"
+                                                                            checked={isChecked || false}
+                                                                            onChange={() => toggleTileInCanvas(t.id, selectedCanvasId, activeComposerQuestionId)} />
+                                                                        )}
+                                                                        <span className={`text-[9px] leading-tight ${isChecked ? 'font-black text-teal-800' : 'font-semibold text-slate-600'}`}>{t.label}</span>
+                                                                      </div>
+                                                                      {t.subtiles?.length > 0 && (
+                                                                        <div className="flex flex-col gap-0.5 pl-3 border-l-2 border-slate-100 ml-1.5 mt-0.5">
+                                                                          {t.subtiles.map(sub => {
+                                                                            const subChecked = selectedCanvasId && activeComposerQuestionId && canvasConfigs.find(cv=>cv.id===selectedCanvasId)?.questions.find(q=>q.id===activeComposerQuestionId)?.selectedTileIds.includes(sub.id);
+                                                                            return (
+                                                                              <div key={sub.id} className={`flex items-start gap-1.5 p-1 rounded transition-colors ${subChecked ? 'bg-indigo-50' : 'hover:bg-slate-50'}`}>
+                                                                                {selectedCanvasId && activeComposerQuestionId && (
+                                                                                  <input type="checkbox" className="w-2.5 h-2.5 accent-indigo-500 mt-0.5 flex-shrink-0 cursor-pointer"
+                                                                                    checked={subChecked || false}
+                                                                                    onChange={() => toggleTileInCanvas(sub.id, selectedCanvasId, activeComposerQuestionId)} />
+                                                                                )}
+                                                                                <span className={`text-[8px] leading-tight ${subChecked ? 'font-black text-indigo-800' : 'font-semibold text-slate-500'}`}>↳ {sub.label}</span>
+                                                                              </div>
+                                                                            );
+                                                                          })}
                                                                         </div>
-                                                                      );
-                                                                    })}
-                                                                  </div>
-                                                                )}
+                                                                      )}
+                                                                    </div>
+                                                                  );
+                                                                })}
                                                               </div>
-                                                            );
-                                                          })}
-                                                        </div>
-                                                      </div>
-                                                    ))}
-                                                  </div>
-                                                );
-                                              })}
+                                                            </td>
+                                                          ))}
+                                                        </tr>
+                                                      );
+                                                    })}
+                                                  </tbody>
+                                                </table>
+                                              </div>
                                             </div>
                                           )}
                                         </div>
