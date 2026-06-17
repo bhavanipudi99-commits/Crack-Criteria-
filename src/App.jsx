@@ -734,7 +734,7 @@ export default function App() {
           if (!cells.length || cells.every(c => !c)) return;
           const critId = uid('crit');
           const rowCells = Array.from({ length: table.columnCount }).map((_, i) => ({
-             text: cells[i] || '', category: '', tiles: [{ id: uid('tile'), label: (cells[i] || '').slice(0, 50) }]
+             text: cells[i] || '', category: '', tiles: [{ id: uid('tile'), label: (cells[i] || '') }]
           }));
           rows.push({ id: critId, cells: rowCells, isHeading: false });
         });
@@ -754,7 +754,7 @@ export default function App() {
         const cols = sep ? line.split(sep).map(c => c.trim()) : [line.trim()];
         const critId = uid('crit');
         const rowCells = Array.from({ length: table.columnCount }).map((_, i) => ({
-             text: cols[i] || '', category: '', tiles: [{ id: uid('tile'), label: (cols[i] || '').slice(0, 50) }]
+             text: cols[i] || '', category: '', tiles: [{ id: uid('tile'), label: (cols[i] || '') }]
         }));
         rows.push({ id: critId, cells: rowCells, isHeading: false });
       });
@@ -780,7 +780,7 @@ export default function App() {
     if (!table) return;
     const critId = uid('crit');
     const cells = Array.from({ length: table.columnCount }).map((_, i) => i === 0 
-      ? { text: selectionPopup.text, category: '', tiles: [{ id: uid('tile'), label: selectionPopup.text.slice(0, 50) }] }
+      ? { text: selectionPopup.text, category: '', tiles: [{ id: uid('tile'), label: selectionPopup.text }] }
       : { text: '', category: '', tiles: [{ id: uid('tile'), label: '' }] }
     );
     setBuilderCriteria(p => [...p, { id: critId, cells, isHeading: false }]);
