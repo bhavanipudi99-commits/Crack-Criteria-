@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { INITIAL_CANVAS_CONFIGS, playSound } from './data/datasets.js';
+import { supabase } from './supabaseClient';
 
 // ─── Screens ─────────────────────────────────────────────────────────────────
 // GATE | PLAYER_HOME | GAME | REVIEW
@@ -8,68 +9,74 @@ import { INITIAL_CANVAS_CONFIGS, playSound } from './data/datasets.js';
 function uid(prefix = 'id') { return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`; }
 
 export default function App() {
-  const [appSubjects, setAppSubjects] = useState(() => {
-    try {
-      const saved = localStorage.getItem('mams_appSubjects');
-      return (saved && Array.isArray(JSON.parse(saved))) ? JSON.parse(saved) : ['Medicine'];
-    } catch (e) { return ['Medicine']; }
-  });
-  const [appChapters, setAppChapters] = useState(() => {
-    try {
-      const saved = localStorage.getItem('mams_appChapters');
-      return (saved && Array.isArray(JSON.parse(saved))) ? JSON.parse(saved) : [{ id: 'ch_cardiology', name: 'Cardiology', subject: 'Medicine' }];
-    } catch (e) { return [{ id: 'ch_cardiology', name: 'Cardiology', subject: 'Medicine' }]; }
-  });
+  const [isCloudLoaded, setIsCloudLoaded] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
-  const [criteriaTables, setCriteriaTables] = useState(() => {
-    try {
-      const saved = localStorage.getItem('mams_criteriaTables');
-      const parsed = saved ? JSON.parse(saved) : [];
-      if (!Array.isArray(parsed)) return [];
-      return parsed.map(t => {
-        if (!t) return null;
-        const rows = Array.isArray(t.rows) ? t.rows.map(r => {
-          if (!r) return null;
-          const cells = Array.isArray(r.cells) ? r.cells.map(c => {
-            if (!c) return { text: '', tiles: [] };
-            const tiles = Array.isArray(c.tiles) ? c.tiles.map(tile => {
-              if (!tile) return null;
-              const subtiles = Array.isArray(tile.subtiles) ? tile.subtiles.filter(Boolean) : [];
-              return { ...tile, subtiles };
-            }).filter(Boolean) : [];
-            return { ...c, tiles };
-          }) : [];
-          return { ...r, cells };
-        }).filter(Boolean) : [];
-        let colCount = t.columnCount;
-        if (!colCount && rows.length > 0) {
-          colCount = Math.max(...rows.map(r => r.cells.length));
+  const [appSubjects, setAppSubjects] = useState(['Medicine']);
+  const [appChapters, setAppChapters] = useState([{ id: 'ch_cardiology', name: 'Cardiology', subject: 'Medicine' }]);
+  const [criteriaTables, setCriteriaTables] = useState([]);
+  const [canvasConfigs, setCanvasConfigs] = useState([]);
+
+  useEffect(() => {
+    async function loadCloudData() {
+      try {
+        const { data, error } = await supabase.from('mams_app_state').select('data').eq('id', 'main').single();
+        if (data && data.data) {
+           const d = data.data;
+           if (d.appSubjects && d.appSubjects.length > 0) setAppSubjects(d.appSubjects);
+           if (d.appChapters && d.appChapters.length > 0) setAppChapters(d.appChapters);
+           
+           if (d.criteriaTables) {
+             const parsedTables = d.criteriaTables.map(t => {
+               if (!t) return null;
+               const rows = Array.isArray(t.rows) ? t.rows.map(r => {
+                 if (!r) return null;
+                 const cells = Array.isArray(r.cells) ? r.cells.map(c => {
+                   if (!c) return { text: '', tiles: [] };
+                   const tiles = Array.isArray(c.tiles) ? c.tiles.map(tile => {
+                     if (!tile) return null;
+                     const subtiles = Array.isArray(tile.subtiles) ? tile.subtiles.filter(Boolean) : [];
+                     return { ...tile, subtiles };
+                   }).filter(Boolean) : [];
+                   return { ...c, tiles };
+                 }) : [];
+                 return { ...r, cells };
+               }).filter(Boolean) : [];
+               return { ...t, rows };
+             }).filter(Boolean);
+             setCriteriaTables(parsedTables);
+           }
+           
+           if (d.canvasConfigs) {
+             const parsedCanvases = d.canvasConfigs.map(c => {
+               if (!c) return null;
+               const questions = Array.isArray(c.questions) && c.questions.length > 0 
+                 ? c.questions 
+                 : [{ id: uid('cq'), prompt: c.gamingQuestion || 'Identify Criteria', selectedTileIds: c.criteriaIds || [] }];
+               return { ...c, questions };
+             }).filter(Boolean);
+             setCanvasConfigs(parsedCanvases);
+           }
         }
-        return { ...t, rows, columnCount: (colCount && colCount > 0) ? colCount : 2 };
-      }).filter(Boolean);
-    } catch (e) { return []; }
-  });
+      } catch(e) {
+        console.error("Cloud load error:", e);
+      } finally {
+        setIsCloudLoaded(true);
+      }
+    }
+    loadCloudData();
+  }, []);
 
-  const [canvasConfigs, setCanvasConfigs] = useState(() => {
-    try {
-      const saved = localStorage.getItem('mams_canvasConfigs');
-      const parsed = saved ? JSON.parse(saved) : [];
-      if (!Array.isArray(parsed)) return [];
-      return parsed.map(c => {
-        if (!c) return null;
-        // Fix old schema lacking questions
-        const questions = Array.isArray(c.questions) && c.questions.length > 0 
-          ? c.questions 
-          : [{ id: uid('cq'), prompt: c.gamingQuestion || 'Identify Criteria', selectedTileIds: c.criteriaIds || [] }];
-        return { ...c, questions };
-      }).filter(Boolean);
-    } catch (e) { return []; }
-  });
-
-  useEffect(() => { localStorage.setItem('mams_appSubjects', JSON.stringify(appSubjects)); }, [appSubjects]);
-  useEffect(() => { localStorage.setItem('mams_appChapters', JSON.stringify(appChapters)); }, [appChapters]);
-  useEffect(() => { localStorage.setItem('mams_criteriaTables', JSON.stringify(criteriaTables)); }, [criteriaTables]);
-  useEffect(() => { localStorage.setItem('mams_canvasConfigs', JSON.stringify(canvasConfigs)); }, [canvasConfigs]);
+  useEffect(() => {
+    if (!isCloudLoaded) return;
+    const timer = setTimeout(async () => {
+      setIsSyncing(true);
+      const data = { appSubjects, appChapters, criteriaTables, canvasConfigs };
+      await supabase.from('mams_app_state').upsert({ id: 'main', data, updated_at: new Date().toISOString() });
+      setTimeout(() => setIsSyncing(false), 800);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [appSubjects, appChapters, criteriaTables, canvasConfigs, isCloudLoaded]);
 
   // ── Routing ──────────────────────────────────────────────────────────────
   const [screen, setScreen] = useState('GATE');
@@ -1639,6 +1646,11 @@ export default function App() {
             <h2 className="text-lg font-black text-slate-900">Curriculum Architect</h2>
           </div>
           <div className="flex items-center gap-3">
+            <div className="mr-4 flex items-center">
+              {!isCloudLoaded && <span className="text-[10px] font-bold text-amber-500 animate-pulse">Connecting...</span>}
+              {isCloudLoaded && isSyncing && <span className="text-[10px] font-bold text-indigo-500 animate-pulse">Syncing... ☁️</span>}
+              {isCloudLoaded && !isSyncing && <span className="text-[10px] font-bold text-teal-600">Cloud Synced ☁️✓</span>}
+            </div>
             <button onClick={exportDatabase} className="text-[10px] font-extrabold text-indigo-600 bg-indigo-50 border border-indigo-100 hover:bg-indigo-100 px-3 py-1.5 rounded-lg uppercase tracking-wide transition-colors">Export DB</button>
             <label className="text-[10px] font-extrabold text-teal-600 bg-teal-50 border border-teal-100 hover:bg-teal-100 px-3 py-1.5 rounded-lg uppercase tracking-wide transition-colors cursor-pointer">
               Import DB
