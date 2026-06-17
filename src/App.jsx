@@ -14,6 +14,7 @@ export default function App() {
 
   const [appSubjects, setAppSubjects] = useState(['Medicine']);
   const [appChapters, setAppChapters] = useState([{ id: 'ch_cardiology', name: 'Cardiology', subject: 'Medicine' }]);
+  const [appSubChapters, setAppSubChapters] = useState([]);
   const [criteriaTables, setCriteriaTables] = useState([]);
   const [canvasConfigs, setCanvasConfigs] = useState([]);
 
@@ -25,6 +26,7 @@ export default function App() {
            const d = data.data;
            if (d.appSubjects && d.appSubjects.length > 0) setAppSubjects(d.appSubjects);
            if (d.appChapters && d.appChapters.length > 0) setAppChapters(d.appChapters);
+           if (d.appSubChapters) setAppSubChapters(d.appSubChapters);
            
            if (d.criteriaTables) {
              const parsedTables = d.criteriaTables.map(t => {
@@ -71,12 +73,12 @@ export default function App() {
     if (!isCloudLoaded) return;
     const timer = setTimeout(async () => {
       setIsSyncing(true);
-      const data = { appSubjects, appChapters, criteriaTables, canvasConfigs };
+      const data = { appSubjects, appChapters, appSubChapters, criteriaTables, canvasConfigs };
       await supabase.from('mams_app_state').upsert({ id: 'main', data, updated_at: new Date().toISOString() });
       setTimeout(() => setIsSyncing(false), 800);
     }, 1500);
     return () => clearTimeout(timer);
-  }, [appSubjects, appChapters, criteriaTables, canvasConfigs, isCloudLoaded]);
+  }, [appSubjects, appChapters, appSubChapters, criteriaTables, canvasConfigs, isCloudLoaded]);
 
   // ── Routing ──────────────────────────────────────────────────────────────
   const [screen, setScreen] = useState('GATE');
@@ -131,6 +133,7 @@ export default function App() {
   const [newSubjectInput, setNewSubjectInput] = useState('');
   const [newChapterInput, setNewChapterInput] = useState('');
   const [newChapterSubject, setNewChapterSubject] = useState('Medicine');
+  const [newSubChapterName, setNewSubChapterName] = useState('');
   const [newTableName, setNewTableName] = useState('');
   const [newTableChapter, setNewTableChapter] = useState('Cardiology');
   const [newCanvasName, setNewCanvasName] = useState('');
@@ -958,13 +961,14 @@ export default function App() {
     }
   };
 
-  const addCriteriaTable = (chapterName) => {
+  const addCriteriaTable = (chapterName, subChapterId = null) => {
     const name = newTableName.trim();
     if (!name) { alert('Enter a table name.'); return; }
     const newTable = {
       id: uid('ct'),
       name,
       chapter: chapterName || newTableChapter,
+      subChapterId,
       columnCount: 2,
       columnHeaders: ['Column 1', 'Column 2'],
       rows: []
@@ -994,7 +998,7 @@ export default function App() {
   // CANVAS MANAGEMENT
   // ════════════════════════════════════════════════════════════════════════════
 
-  const addCanvas = (type = 'CANVAS', chapterName = null) => {
+  const addCanvas = (type = 'CANVAS', chapterName = null, subChapterId = null) => {
     const name = newCanvasName.trim();
     if (!name && type === 'CANVAS') { alert('Enter a name.'); return; }
     let defaultQ;
@@ -1002,7 +1006,7 @@ export default function App() {
     else if (type === 'NUMERICAL') defaultQ = { id: uid('cq'), targetTileId: null, decoyTileIds: [] };
     else if (type === 'ODD_ONE_OUT') defaultQ = { id: uid('cq'), correctTileIds: [], distractorTileId: null };
 
-    const newCanvas = { id: uid('canvas'), name: name || type, chapter: chapterName || newCanvasChapter, type, maxTiles: 16, questions: [defaultQ] };
+    const newCanvas = { id: uid('canvas'), name: name || type, chapter: chapterName || newCanvasChapter, subChapterId, type, maxTiles: 16, questions: [defaultQ] };
     setCanvasConfigs(p => [...p, newCanvas]);
     setNewCanvasName('');
     setNewCanvasChapter(chapterName || newCanvasChapter);
@@ -1129,7 +1133,7 @@ export default function App() {
   };
 
   const exportDatabase = () => {
-    const data = { appSubjects, appChapters, criteriaTables, canvasConfigs };
+    const data = { appSubjects, appChapters, appSubChapters, criteriaTables, canvasConfigs };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -1651,11 +1655,7 @@ export default function App() {
               {isCloudLoaded && isSyncing && <span className="text-[10px] font-bold text-indigo-500 animate-pulse">Syncing... ☁️</span>}
               {isCloudLoaded && !isSyncing && <span className="text-[10px] font-bold text-teal-600">Cloud Synced ☁️✓</span>}
             </div>
-            <button onClick={exportDatabase} className="text-[10px] font-extrabold text-indigo-600 bg-indigo-50 border border-indigo-100 hover:bg-indigo-100 px-3 py-1.5 rounded-lg uppercase tracking-wide transition-colors">Export DB</button>
-            <label className="text-[10px] font-extrabold text-teal-600 bg-teal-50 border border-teal-100 hover:bg-teal-100 px-3 py-1.5 rounded-lg uppercase tracking-wide transition-colors cursor-pointer">
-              Import DB
-              <input type="file" accept=".json" onChange={importDatabase} className="hidden" />
-            </label>
+
             <button onClick={() => { setAdminPassword(''); setSelectedCanvasId(null); setScreen('GATE'); }}
               className="text-[10px] font-bold text-slate-400 hover:text-slate-700 uppercase tracking-wide ml-2">Sign Out</button>
           </div>
@@ -1703,7 +1703,7 @@ export default function App() {
                       <div className="p-3 space-y-3 bg-white">
                         {subChapters.map(chap => {
                           const chapExpanded = expandedChapters[`chap_${chap.id}`] !== false;
-                          const tables = criteriaTables.filter(t => t.chapter === chap.name);
+                          const tables = criteriaTables.filter(t => t.chapter === chap.name && !t.subChapterId);
                           const pureCanvases = canvasConfigs.filter(c => c.chapter === chap.name && (!c.type || c.type === 'CANVAS'));
                           const numConfigs = canvasConfigs.filter(c => c.chapter === chap.name && c.type === 'NUMERICAL');
                           const oddConfigs = canvasConfigs.filter(c => c.chapter === chap.name && c.type === 'ODD_ONE_OUT');
@@ -1725,6 +1725,147 @@ export default function App() {
                               {chapExpanded && (
                                 <div className="p-2 space-y-4 bg-white pl-3 border-l-2 border-indigo-50 ml-1.5 my-1">
                                   
+                                  {/* SUB-CHAPTERS */}
+                                  <div className="mb-4 p-2 bg-slate-50 border border-slate-200 rounded-lg">
+                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">📂 Sub-chapters</p>
+                                    <div className="flex flex-col gap-2">
+                                      {appSubChapters.filter(sc => sc.chapterName === chap.name).map(sc => {
+                                        const scExpanded = expandedChapters[`subchap_${sc.id}`];
+                                        return (
+                                          <div key={sc.id} className="border border-slate-200 bg-white rounded-md overflow-hidden">
+                                            <button onClick={() => setExpandedChapters(p => ({ ...p, [`subchap_${sc.id}`]: !scExpanded }))}
+                                              className="w-full px-2 py-1.5 flex justify-between items-center hover:bg-slate-50 text-left">
+                                              <span className="text-[11px] font-bold text-slate-700">📂 {sc.name}</span>
+                                              <span className="text-[9px] font-bold text-slate-400">{scExpanded ? '▼' : '►'}</span>
+                                            </button>
+                                            {scExpanded && (
+                                              <div className="p-2 border-t border-slate-100 bg-slate-50/50">
+                                                                                                <div className="space-y-1.5">
+                                                  <div className="flex justify-between items-center mb-2">
+                                                     <p className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">📋 Tables</p>
+                                                  </div>
+                                                  {criteriaTables.filter(t => t.chapter === chap.name && t.subChapterId === sc.id).length === 0 && <p className="text-[10px] text-slate-400 italic">No tables yet</p>}
+                                                  {criteriaTables.filter(t => t.chapter === chap.name && t.subChapterId === sc.id).map(table => {
+                                                    const isTableExpanded = !!expandedChapters[`table_${table.id}`];
+                                                    return (
+                                                      <div key={table.id} className="border border-indigo-100 rounded-lg bg-white overflow-hidden shadow-sm">
+                                                        <div className="flex justify-between items-center px-2 py-1.5 bg-indigo-50/50 border-b border-indigo-50">
+                                                          <button onClick={() => setExpandedChapters(p => ({ ...p, [`table_${table.id}`]: !isTableExpanded }))} className="flex-1 text-left flex items-center gap-1.5">
+                                                            <span className="text-indigo-400 font-bold text-[8px] w-3">{isTableExpanded ? '▼' : '►'}</span>
+                                                            <p className="text-[11px] font-extrabold text-indigo-900 truncate leading-tight">{table.name}</p>
+                                                          </button>
+                                                          <div className="flex gap-1">
+                                                            <button onClick={() => { setSelectedTableId(table.id); setBuilderCriteria(JSON.parse(JSON.stringify(table.rows))); if (pasteAreaRef.current) pasteAreaRef.current.innerHTML = ''; setScreen('CRITERIA_TABLE_BUILDER'); }}
+                                                              className="text-[9px] font-bold text-indigo-600 hover:text-indigo-800 uppercase px-1.5 py-0.5 border border-indigo-200 rounded bg-white shadow-sm">Edit</button>
+                                                          </div>
+                                                        </div>
+                                                        
+                                                        {isTableExpanded && (
+                                                          <div className="p-1.5 bg-slate-50/50">
+                                                            <div className="overflow-x-auto rounded border border-indigo-100 shadow-sm">
+                                                              {table.rows.length === 0 ? (
+                                                                <div className="p-4 text-center bg-white flex flex-col items-center justify-center gap-2">
+                                                                  <span className="text-xl">📭</span>
+                                                                  <p className="text-[10px] font-bold text-slate-400">This table is empty!</p>
+                                                                  <button onClick={() => { setSelectedTableId(table.id); setBuilderCriteria([]); if (pasteAreaRef.current) pasteAreaRef.current.innerHTML = ""; setScreen("CRITERIA_TABLE_BUILDER"); }}
+                                                                    className="mt-1 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-[9px] font-bold uppercase rounded-md transition-colors">
+                                                                    Click "Edit" to Build Table
+                                                                  </button>
+                                                                </div>
+                                                              ) : (
+                                                              <table className="w-full text-left border-collapse bg-white table-fixed">
+                                                                <tbody>
+                                                                  {table.rows.map(row => {
+                                                                    if (row.isHeading) {
+                                                                      const isSub = row.headingType === 'sub';
+                                                                      return (
+                                                                        <tr key={row.id} className={isSub ? 'bg-amber-50/50' : 'bg-amber-100/80'}>
+                                                                          {row.cells.map((cell, ci) => (
+                                                                            <td key={ci} className={`px-2 py-1.5 border border-indigo-50/50 text-center ${isSub ? 'text-[8px] font-bold text-amber-600' : 'text-[9px] font-black text-amber-800'} uppercase tracking-widest`}>
+                                                                              {cell.text}
+                                                                            </td>
+                                                                          ))}
+                                                                        </tr>
+                                                                      );
+                                                                    }
+                                                                    return (
+                                                                      <tr key={row.id} className="border-b border-indigo-50 last:border-0 hover:bg-slate-50/30">
+                                                                        {(row.cells||[]).map((c, ci) => (
+                                                                          <td key={ci} className="p-2 border border-indigo-50/50 align-top">
+                                                                            {(!c.tiles || c.tiles.length === 0) && (
+                                                                              <div className="font-extrabold text-indigo-900 border-b border-indigo-50/50 pb-1 mb-1.5 leading-tight text-[10px]">{c.text || 'Row'}</div>
+                                                                            )}
+                                                                            <div className="flex flex-col gap-1">
+                                                                              {(c.tiles||[]).map(t => {
+                                                                                const isChecked = selectedCanvasId && activeComposerQuestionId && canvasConfigs.find(cv=>cv.id===selectedCanvasId)?.questions.find(q=>q.id===activeComposerQuestionId)?.selectedTileIds.includes(t.id);
+                                                                                return (
+                                                                                  <div key={t.id} className="flex flex-col gap-0.5">
+                                                                                    <div className={`flex items-start gap-1.5 p-1 rounded transition-colors ${isChecked ? 'bg-teal-50' : 'hover:bg-slate-50'}`}>
+                                                                                      {selectedCanvasId && activeComposerQuestionId && (
+                                                                                        <input type="checkbox" className="w-3 h-3 accent-teal-500 mt-0.5 flex-shrink-0 cursor-pointer"
+                                                                                          checked={isChecked || false}
+                                                                                          onChange={() => toggleTileInCanvas(t.id, selectedCanvasId, activeComposerQuestionId)} />
+                                                                                      )}
+                                                                                      <span className={`text-[9px] leading-tight ${isChecked ? 'font-black text-teal-800' : 'font-semibold text-slate-600'}`}>{t.label}</span>
+                                                                                    </div>
+                                                                                    {t.subtiles?.length > 0 && (
+                                                                                      <div className="flex flex-col gap-0.5 pl-3 border-l-2 border-slate-100 ml-1.5 mt-0.5">
+                                                                                        {t.subtiles.map(sub => {
+                                                                                          const subChecked = selectedCanvasId && activeComposerQuestionId && canvasConfigs.find(cv=>cv.id===selectedCanvasId)?.questions.find(q=>q.id===activeComposerQuestionId)?.selectedTileIds.includes(sub.id);
+                                                                                          return (
+                                                                                            <div key={sub.id} className={`flex items-start gap-1.5 p-1 rounded transition-colors ${subChecked ? 'bg-indigo-50' : 'hover:bg-slate-50'}`}>
+                                                                                              {selectedCanvasId && activeComposerQuestionId && (
+                                                                                                <input type="checkbox" className="w-2.5 h-2.5 accent-indigo-500 mt-0.5 flex-shrink-0 cursor-pointer"
+                                                                                                  checked={subChecked || false}
+                                                                                                  onChange={() => toggleTileInCanvas(sub.id, selectedCanvasId, activeComposerQuestionId)} />
+                                                                                              )}
+                                                                                              <span className={`text-[8px] leading-tight ${subChecked ? 'font-black text-indigo-800' : 'font-semibold text-slate-500'}`}>↳ {sub.label}</span>
+                                                                                            </div>
+                                                                                          );
+                                                                                        })}
+                                                                                      </div>
+                                                                                    )}
+                                                                                  </div>
+                                                                                );
+                                                                              })}
+                                                                            </div>
+                                                                          </td>
+                                                                        ))}
+                                                                      </tr>
+                                                                    );
+                                                                  })}
+                                                                </tbody>
+                                                              </table>
+                                                              )}
+                                                            </div>
+                                                          </div>
+                                                        )}
+                                                      </div>
+                                                    );
+                                                  })}
+                                                  <div className="flex gap-1.5 mt-2">
+                                                    <input type="text" placeholder="+ New table" value={newTableChapter === `sub_${sc.id}` ? newTableName : ''}
+                                                      onChange={e => { setNewTableName(e.target.value); setNewTableChapter(`sub_${sc.id}`); }}
+                                                      onClick={() => setNewTableChapter(`sub_${sc.id}`)}
+                                                      className="flex-1 px-2 py-1.5 border border-dashed border-indigo-300 rounded-lg text-[10px] font-bold bg-indigo-50/30 focus:outline-none focus:border-indigo-500" />
+                                                    <button onClick={() => { addCriteriaTable(chap.name, sc.id); }} className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold transition-colors">+</button>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            )}
+                                          </div>
+                                        );
+                                      })}
+                                      <div className="flex gap-1.5 mt-1">
+                                        <input type="text" placeholder="+ New sub-chapter" value={newSubChapterParent === chap.name ? newSubChapterName : ''}
+                                          onChange={e => { setNewSubChapterName(e.target.value); setNewSubChapterParent(chap.name); }}
+                                          onClick={() => setNewSubChapterParent(chap.name)}
+                                          className="flex-1 px-2 py-1 border border-slate-200 rounded text-[10px] font-bold bg-white focus:outline-none focus:border-slate-400" />
+                                        <button onClick={() => addSubChapter(chap.name)} className="bg-slate-600 hover:bg-slate-700 text-white px-2 py-1 rounded text-[10px] font-bold transition-colors">+</button>
+                                      </div>
+                                    </div>
+                                  </div>
+
                                   {/* TABLES */}
                                   <div className="space-y-1.5">
                                     <div className="flex justify-between items-center mb-2">
