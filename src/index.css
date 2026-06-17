@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  user-select: none;
+  -webkit-user-select: none;
+  background-color: #F1F5F9;
+  color: #0F172A;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* Allow text selection inside the paste workspace */
+[contenteditable],
+[contenteditable] * {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  cursor: text;
+}
+
+/* Allow text selection inside input and textarea */
+input, textarea {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+}
+
+@keyframes pulseWarning {
+  0%, 100% { border-color: #E2E8F0; }
+  50% { border-color: #EF4444; background-color: rgba(239, 68, 68, 0.05); }
+}
+
+.timer-panic {
+  animation: pulseWarning 0.8s infinite alternate;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(3px); }
+}
+
+.animate-shake {
+  animation: shake 0.4s ease-in-out;
+}
