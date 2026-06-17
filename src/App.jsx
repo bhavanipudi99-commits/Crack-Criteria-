@@ -1094,6 +1094,37 @@ export default function App() {
     }
   };
 
+  const exportDatabase = () => {
+    const data = { appSubjects, appChapters, criteriaTables, canvasConfigs };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `mams_database_export_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const importDatabase = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = JSON.parse(event.target.result);
+        if (data.appSubjects) setAppSubjects(data.appSubjects);
+        if (data.appChapters) setAppChapters(data.appChapters);
+        if (data.criteriaTables) setCriteriaTables(data.criteriaTables);
+        if (data.canvasConfigs) setCanvasConfigs(data.canvasConfigs);
+        alert('Database imported successfully!');
+      } catch (err) {
+        alert('Invalid database file format.');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = null;
+  };
+
   // ════════════════════════════════════════════════════════════════════════════
   // RENDER: GATEWAY & PLAYER HOME
   // ════════════════════════════════════════════════════════════════════════════
@@ -1552,8 +1583,15 @@ export default function App() {
             <p className="text-[9px] font-black text-clinical-gold uppercase tracking-widest">Admin Dashboard</p>
             <h2 className="text-lg font-black text-slate-900">Curriculum Architect</h2>
           </div>
-          <button onClick={() => { setAdminPassword(''); setSelectedCanvasId(null); setScreen('GATE'); }}
-            className="text-[10px] font-bold text-slate-400 hover:text-slate-700 uppercase tracking-wide">Sign Out</button>
+          <div className="flex items-center gap-3">
+            <button onClick={exportDatabase} className="text-[10px] font-extrabold text-indigo-600 bg-indigo-50 border border-indigo-100 hover:bg-indigo-100 px-3 py-1.5 rounded-lg uppercase tracking-wide transition-colors">Export DB</button>
+            <label className="text-[10px] font-extrabold text-teal-600 bg-teal-50 border border-teal-100 hover:bg-teal-100 px-3 py-1.5 rounded-lg uppercase tracking-wide transition-colors cursor-pointer">
+              Import DB
+              <input type="file" accept=".json" onChange={importDatabase} className="hidden" />
+            </label>
+            <button onClick={() => { setAdminPassword(''); setSelectedCanvasId(null); setScreen('GATE'); }}
+              className="text-[10px] font-bold text-slate-400 hover:text-slate-700 uppercase tracking-wide ml-2">Sign Out</button>
+          </div>
         </div>
 
         <div className="flex-1 flex overflow-hidden">
