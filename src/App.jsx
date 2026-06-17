@@ -954,19 +954,20 @@ export default function App() {
     }
   };
 
-  const addCriteriaTable = () => {
+  const addCriteriaTable = (chapterName) => {
     const name = newTableName.trim();
     if (!name) { alert('Enter a table name.'); return; }
     const newTable = {
       id: uid('ct'),
-      name: newTableName,
-      chapter: newTableChapter,
+      name,
+      chapter: chapterName || newTableChapter,
       columnCount: 2,
       columnHeaders: ['Column 1', 'Column 2'],
       rows: []
     };
     setCriteriaTables(p => [...p, newTable]);
     setNewTableName('');
+    setNewTableChapter(chapterName || newTableChapter);
     setSelectedTableId(newTable.id);
     setBuilderCriteria([]);
     setScreen('CRITERIA_TABLE_BUILDER');
@@ -989,17 +990,18 @@ export default function App() {
   // CANVAS MANAGEMENT
   // ════════════════════════════════════════════════════════════════════════════
 
-  const addCanvas = (type = 'CANVAS') => {
+  const addCanvas = (type = 'CANVAS', chapterName = null) => {
     const name = newCanvasName.trim();
-    if (!name) { alert('Enter a name.'); return; }
+    if (!name && type === 'CANVAS') { alert('Enter a name.'); return; }
     let defaultQ;
     if (type === 'CANVAS') defaultQ = { id: uid('cq'), prompt: 'Identify Criteria', selectedTileIds: [] };
     else if (type === 'NUMERICAL') defaultQ = { id: uid('cq'), targetTileId: null, decoyTileIds: [] };
     else if (type === 'ODD_ONE_OUT') defaultQ = { id: uid('cq'), correctTileIds: [], distractorTileId: null };
 
-    const newCanvas = { id: uid('canvas'), name, chapter: newCanvasChapter, type, maxTiles: 16, questions: [defaultQ] };
+    const newCanvas = { id: uid('canvas'), name: name || type, chapter: chapterName || newCanvasChapter, type, maxTiles: 16, questions: [defaultQ] };
     setCanvasConfigs(p => [...p, newCanvas]);
     setNewCanvasName('');
+    setNewCanvasChapter(chapterName || newCanvasChapter);
     setSelectedCanvasId(newCanvas.id);
     setActiveComposerQuestionId(defaultQ.id);
     setScreen('CANVAS_COMPOSER');
@@ -1813,7 +1815,7 @@ export default function App() {
                                         onChange={e => { setNewTableName(e.target.value); setNewTableChapter(chap.name); }}
                                         onClick={() => setNewTableChapter(chap.name)}
                                         className="flex-1 px-2 py-1.5 border border-dashed border-indigo-300 rounded-lg text-[10px] font-bold bg-indigo-50/30 focus:outline-none focus:border-indigo-500" />
-                                      <button onClick={() => { setNewTableChapter(chap.name); addCriteriaTable(); }} className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold transition-colors">+</button>
+                                      <button onClick={() => { addCriteriaTable(chap.name); }} className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold transition-colors">+</button>
                                     </div>
                                   </div>
 
@@ -1835,7 +1837,7 @@ export default function App() {
                                         onChange={e => { setNewCanvasName(e.target.value); setNewCanvasChapter(chap.name); }}
                                         onClick={() => setNewCanvasChapter(chap.name)}
                                         className="flex-1 px-2 py-1.5 border border-dashed border-teal-300 rounded-lg text-[10px] font-bold bg-teal-50/30 focus:outline-none focus:border-teal-500" />
-                                      <button onClick={() => { setNewCanvasChapter(chap.name); addCanvas('CANVAS'); }} className="bg-teal-600 hover:bg-teal-700 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold transition-colors">+</button>
+                                      <button onClick={() => { addCanvas('CANVAS', chap.name); }} className="bg-teal-600 hover:bg-teal-700 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold transition-colors">+</button>
                                     </div>
                                   </div>
 
@@ -1853,7 +1855,7 @@ export default function App() {
                                       </div>
                                     ))}
                                     <div className="flex gap-1.5 mt-2">
-                                      <button onClick={() => { setNewCanvasName('Numerical Deck'); setNewCanvasChapter(chap.name); addCanvas('NUMERICAL'); }} className="w-full bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold transition-colors">+ Build Numerical Deck</button>
+                                      <button onClick={() => { setNewCanvasName('Numerical Deck'); addCanvas('NUMERICAL', chap.name); }} className="w-full bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold transition-colors">+ Build Numerical Deck</button>
                                     </div>
                                   </div>
 
@@ -1871,7 +1873,7 @@ export default function App() {
                                       </div>
                                     ))}
                                     <div className="flex gap-1.5 mt-2">
-                                      <button onClick={() => { setNewCanvasName('Odd One Deck'); setNewCanvasChapter(chap.name); addCanvas('ODD_ONE_OUT'); }} className="w-full bg-rose-500 hover:bg-rose-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold transition-colors">+ Build Odd One Deck</button>
+                                      <button onClick={() => { setNewCanvasName('Odd One Deck'); addCanvas('ODD_ONE_OUT', chap.name); }} className="w-full bg-rose-500 hover:bg-rose-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold transition-colors">+ Build Odd One Deck</button>
                                     </div>
                                   </div>
 
