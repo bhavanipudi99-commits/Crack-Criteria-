@@ -247,7 +247,7 @@ export default function App() {
         setGameCanvasQueue(configs);
         setActiveCanvasIdx(0);
         setActiveQuestionIdx(0);
-        loadNumericalSlide(numericalTiles, chapterTables, configs[0], 0);
+        loadNumericalSlide(chapterTables, configs[0], 0);
       } else {
         if (numericalTiles.length < 4) {
           alert('Not enough numerical tiles in this chapter to play Rapid Fire (Need at least 4).');
@@ -256,7 +256,7 @@ export default function App() {
         setGameCanvasQueue([{ id: 'arcade', questions: new Array(100).fill({}) }]);
         setActiveCanvasIdx(0);
         setActiveQuestionIdx(0);
-        loadNumericalSlide(numericalTiles, chapterTables);
+        loadNumericalSlide(chapterTables);
       }
     } else if (activeGameMode === 'ODD_ONE_OUT') {
       let configs = canvasConfigs.filter(c => c.chapter === chapterName && c.type === 'ODD_ONE_OUT');
@@ -266,7 +266,7 @@ export default function App() {
         setGameCanvasQueue(configs);
         setActiveCanvasIdx(0);
         setActiveQuestionIdx(0);
-        loadOddOneOutSlide(chapterTables, null, configs[0], 0);
+        loadOddOneOutSlide(configs[0], 0);
       } else {
         const chapterCanvases = canvasConfigs.filter(c => c.chapter === chapterName && (!c.type || c.type === 'CANVAS'));
         const playableQuestions = chapterCanvases.flatMap(c => c.questions.filter(q => q.selectedTileIds && q.selectedTileIds.length >= 3).map(q => ({ canvas: c, question: q })));
@@ -278,10 +278,6 @@ export default function App() {
         setGameCanvasQueue([{ id: 'arcade', questions: new Array(100).fill({}) }]);
         setActiveCanvasIdx(0);
         setActiveQuestionIdx(0);
-        loadOddOneOutSlide(chapterTables, playableQuestions);
-      }
-    }
-  };
 
   const loadMarathonSlide = (chapterTablesParam) => {
     const chapterTables = chapterTablesParam || activeChapterTables;
@@ -295,7 +291,7 @@ export default function App() {
       const allTiles = chapterTables.flatMap(t => (t.rows||[]).flatMap(r => (r.cells||[]).flatMap(c => (c.tiles||[]).flatMap(tile => [tile, ...(tile.subtiles||[])]))));
       const numericalTiles = allTiles.filter(t => parseNumericalData(t.label));
       if (numericalTiles.length >= 4) {
-        return loadNumericalSlide(numericalTiles, chapterTables);
+        return loadNumericalSlide(chapterTables);
       }
     } else if (selectedMode === 'ODD_ONE_OUT') {
       const allCanvases = canvasConfigs.filter(c => chapterTables.some(t => t.chapter === c.chapter));
@@ -395,7 +391,7 @@ export default function App() {
     setScreen('GAME');
   };
 
-  const loadNumericalSlide = (numericalTilesParam, chapterTablesParam, configCanvas = null, qIdx = 0) => {
+  const loadNumericalSlide = (chapterTablesParam, configCanvas = null, qIdx = 0) => {
     const chapterTables = chapterTablesParam || activeChapterTables;
     const allTiles = chapterTables.flatMap(t => (t.rows||[]).flatMap(r => (r.cells||[]).flatMap(c => (c.tiles||[]).flatMap(tile => {
       const items = [{
@@ -409,7 +405,12 @@ export default function App() {
     }))));
 
     const numTiles = allTiles.filter(t => parseNumericalData(t.label));
-    if (numTiles.length < 4) return advanceToNext();
+    if (numTiles.length < 4) {
+      if (activeGameMode === 'MIXED_MARATHON') return loadCanvasSlide(chapterTablesParam, null, 0);
+      alert('Not enough numerical tiles in this dataset (Need at least 4).');
+      setScreen('PLAYER_HOME');
+      return false;
+    }
 
     let targetTile;
     let distractors = [];
@@ -462,7 +463,7 @@ export default function App() {
     setScreen('GAME');
   };
 
-  const loadOddOneOutSlide = (chapterTablesParam, playableQuestionsParam = null, configCanvas = null, qIdx = 0) => {
+  const loadOddOneOutSlide = (chapterTablesParam, configCanvas = null, qIdx = 0) => {
     const chapterTables = chapterTablesParam || activeChapterTables;
     const allChapterTiles = chapterTables.flatMap(t => (t.rows||[]).filter(r => !r.isHeading).flatMap(r => (r.cells||[]).flatMap(c => (c.tiles||[]).flatMap(tile => [tile, ...(tile.subtiles||[])]).map(t_obj => ({
       tileId: t_obj.id, label: t_obj.label, criterionId: r.id, criterionFullText: c.text,
@@ -484,14 +485,13 @@ export default function App() {
     }
 
     if (!distractorTile || correctFitTiles.length === 0) {
-      let playableQuestions = playableQuestionsParam;
-      if (!playableQuestions) {
-        const chapterCanvases = canvasConfigs.filter(c => c.chapter === chapterTables[0]?.chapter && (!c.type || c.type === 'CANVAS'));
-        playableQuestions = chapterCanvases.flatMap(c => c.questions.filter(q => q.selectedTileIds && q.selectedTileIds.length >= 3).map(q => ({ canvas: c, question: q })));
-      }
-      if (!playableQuestions || playableQuestions.length === 0) {
+      const chapterCanvases = canvasConfigs.filter(c => c.chapter === chapterTables[0]?.chapter && (!c.type || c.type === 'CANVAS'));
+      const playableQuestions = chapterCanvases.flatMap(c => c.questions.filter(q => q.selectedTileIds && q.selectedTileIds.length >= 3).map(q => ({ canvas: c, question: q })));
+      if (playableQuestions.length === 0) {
+        if (activeGameMode === 'MIXED_MARATHON') return loadCanvasSlide(chapterTablesParam, null, 0);
+        alert('No valid Canvas configs found with >=3 tiles to base Odd-One-Outs on.');
         setScreen('PLAYER_HOME');
-        return;
+        return false;
       }
       const selectedQ = playableQuestions[Math.floor(Math.random() * playableQuestions.length)].question;
       correctFitTiles = allChapterTiles
@@ -688,8 +688,8 @@ export default function App() {
         const nextQIdx = activeQuestionIdxRef.current + 1;
         setActiveQuestionIdx(nextQIdx);
         if (activeGameMode === 'CANVAS') loadCanvasSlide(curCanvas, nextQIdx);
-        else if (activeGameMode === 'NUMERICAL') loadNumericalSlide(null, null, curCanvas.id === 'arcade' ? null : curCanvas, nextQIdx);
-        else if (activeGameMode === 'ODD_ONE_OUT') loadOddOneOutSlide(null, null, curCanvas.id === 'arcade' ? null : curCanvas, nextQIdx);
+        else if (activeGameMode === 'NUMERICAL') loadNumericalSlide(null, curCanvas.id === 'arcade' ? null : curCanvas, nextQIdx);
+        else if (activeGameMode === 'ODD_ONE_OUT') loadOddOneOutSlide(null, curCanvas.id === 'arcade' ? null : curCanvas, nextQIdx);
       } 
       // Else if there's another canvas in the queue
       else if (activeCanvasIdxRef.current + 1 < gameCanvasQueueRef.current.length) {
@@ -697,8 +697,8 @@ export default function App() {
         setActiveCanvasIdx(nextCIdx);
         setActiveQuestionIdx(0);
         if (activeGameMode === 'CANVAS') loadCanvasSlide(gameCanvasQueueRef.current[nextCIdx], 0);
-        else if (activeGameMode === 'NUMERICAL') loadNumericalSlide(null, null, gameCanvasQueueRef.current[nextCIdx].id === 'arcade' ? null : gameCanvasQueueRef.current[nextCIdx], 0);
-        else if (activeGameMode === 'ODD_ONE_OUT') loadOddOneOutSlide(null, null, gameCanvasQueueRef.current[nextCIdx].id === 'arcade' ? null : gameCanvasQueueRef.current[nextCIdx], 0);
+        else if (activeGameMode === 'NUMERICAL') loadNumericalSlide(null, gameCanvasQueueRef.current[nextCIdx].id === 'arcade' ? null : gameCanvasQueueRef.current[nextCIdx], 0);
+        else if (activeGameMode === 'ODD_ONE_OUT') loadOddOneOutSlide(null, gameCanvasQueueRef.current[nextCIdx].id === 'arcade' ? null : gameCanvasQueueRef.current[nextCIdx], 0);
       } 
       // Else game over
       else {
