@@ -1531,24 +1531,50 @@ export default function App() {
                                     {(!cell.tiles || cell.tiles.length === 0) && (
                                       <p className="text-[11px] font-semibold text-slate-700 leading-tight mb-1">{cell.text}</p>
                                     )}
-                                    {hasTiles && (
-                                       <div className="flex flex-col gap-1.5 mt-2">
-                                         {cell.tileResults.map((tr, ti) => (
-                                           <div key={tr.tile.id} className="flex items-center gap-1.5">
-                                             {tr.presentedOnly ? (
-                                                <div className="flex flex-shrink-0 items-center justify-center w-4 h-4 rounded-full text-[9px] font-black bg-slate-300 text-slate-600 shadow-sm">ℹ</div>
-                                             ) : tr.skipped ? (
-                                                <div className="flex flex-shrink-0 items-center justify-center w-4 h-4 rounded-full text-[9px] font-black bg-amber-400 text-white shadow-sm">⚠</div>
-                                             ) : (
-                                                <div className={`flex flex-shrink-0 items-center justify-center w-4 h-4 rounded-full text-[9px] font-black ${tr.solved ? 'bg-emerald-500 text-white shadow-sm' : 'bg-rose-500 text-white shadow-sm'}`}>
-                                                  {tr.solved ? '✓' : '✗'}
+                                     {hasTiles && (
+                                        <div className="flex flex-col gap-1 mt-2">
+                                          {(cell.tiles||[]).filter(t => cell.tileResults.some(tr => tr.tile.id === t.id)).map((t, ti) => {
+                                            const tr = cell.tileResults.find(x => x.tile.id === t.id);
+                                            return (
+                                              <div key={t.id} className="flex flex-col gap-0.5">
+                                                <div className="flex items-start gap-1.5">
+                                                  {tr.presentedOnly ? (
+                                                     <div className="flex flex-shrink-0 items-center justify-center w-4 h-4 rounded-full text-[9px] font-black bg-slate-300 text-slate-600 shadow-sm mt-0.5">ℹ</div>
+                                                  ) : tr.skipped ? (
+                                                     <div className="flex flex-shrink-0 items-center justify-center w-4 h-4 rounded-full text-[9px] font-black bg-amber-400 text-white shadow-sm mt-0.5">⚠</div>
+                                                  ) : (
+                                                     <div className={`flex flex-shrink-0 items-center justify-center w-4 h-4 rounded-full text-[9px] font-black ${tr.solved ? "bg-emerald-500 text-white shadow-sm" : "bg-rose-500 text-white shadow-sm"} mt-0.5`}>
+                                                       {tr.solved ? "✓" : "✗"}
+                                                     </div>
+                                                  )}
+                                                  <span className={`text-[10px] font-extrabold flex-1 leading-tight ${tr.presentedOnly ? "text-slate-600" : tr.solved ? "text-emerald-900" : tr.skipped ? "text-amber-800" : "text-rose-900"}`}>{t.label}</span>
                                                 </div>
-                                             )}
-                                             <span className={`text-[10px] font-extrabold flex-1 leading-tight ${tr.presentedOnly ? 'text-slate-600' : tr.solved ? 'text-emerald-900' : tr.skipped ? 'text-amber-800' : 'text-rose-900'}`}>{tr.tile.label}</span>
-                                           </div>
-                                         ))}
-                                       </div>
-                                    )}
+                                                {t.subtiles?.length > 0 && (
+                                                  <div className="flex flex-col gap-1 pl-3 border-l-2 border-slate-200/50 ml-2 mt-0.5">
+                                                    {t.subtiles.filter(sub => cell.tileResults.some(tr => tr.tile.id === sub.id)).map(sub => {
+                                                      const subTr = cell.tileResults.find(x => x.tile.id === sub.id);
+                                                      return (
+                                                        <div key={sub.id} className="flex items-start gap-1.5">
+                                                          {subTr.presentedOnly ? (
+                                                             <div className="flex flex-shrink-0 items-center justify-center w-3 h-3 rounded-full text-[7px] font-black bg-slate-300 text-slate-600 shadow-sm mt-0.5">ℹ</div>
+                                                          ) : subTr.skipped ? (
+                                                             <div className="flex flex-shrink-0 items-center justify-center w-3 h-3 rounded-full text-[7px] font-black bg-amber-400 text-white shadow-sm mt-0.5">⚠</div>
+                                                          ) : (
+                                                             <div className={`flex flex-shrink-0 items-center justify-center w-3 h-3 rounded-full text-[7px] font-black ${subTr.solved ? "bg-emerald-500 text-white shadow-sm" : "bg-rose-500 text-white shadow-sm"} mt-0.5`}>
+                                                               {subTr.solved ? "✓" : "✗"}
+                                                             </div>
+                                                          )}
+                                                          <span className={`text-[9px] font-bold flex-1 leading-tight ${subTr.presentedOnly ? "text-slate-500" : subTr.solved ? "text-emerald-800" : subTr.skipped ? "text-amber-700" : "text-rose-800"}`}>↳ {sub.label}</span>
+                                                        </div>
+                                                      );
+                                                    })}
+                                                  </div>
+                                                )}
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                     )}
                                  </td>
                                );
                             })}
