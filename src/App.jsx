@@ -278,6 +278,10 @@ export default function App() {
         setGameCanvasQueue([{ id: 'arcade', questions: new Array(100).fill({}) }]);
         setActiveCanvasIdx(0);
         setActiveQuestionIdx(0);
+        loadOddOneOutSlide(chapterTables, null, 0);
+      }
+    }
+  };
 
   const loadMarathonSlide = (chapterTablesParam) => {
     const chapterTables = chapterTablesParam || activeChapterTables;
