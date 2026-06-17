@@ -927,10 +927,7 @@ export default function App() {
     
     // Valid rows: at least one cell must have text. If normal, all tiles must have labels.
     const valid = builderCriteria.filter(row => {
-      const hasText = row.cells.some(c => c.text.trim());
-      if (!hasText) return false;
-      if (row.isHeading) return true;
-      return row.cells.every(c => c.tiles.every(t => t.label.trim()));
+      return row.cells.some(c => c.text.trim() || (c.tiles && c.tiles.some(t => t.label && t.label.trim())));
     });
     
     if (!valid.length && builderCriteria.length > 0) { alert('Complete required fields first.'); return; }
