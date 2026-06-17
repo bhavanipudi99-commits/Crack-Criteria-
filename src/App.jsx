@@ -1741,6 +1741,16 @@ export default function App() {
                                           {isTableExpanded && (
                                             <div className="p-1.5 bg-slate-50/50">
                                               <div className="overflow-x-auto rounded border border-indigo-100 shadow-sm">
+                                                {table.rows.length === 0 ? (
+                                                  <div className="p-4 text-center bg-white flex flex-col items-center justify-center gap-2">
+                                                    <span className="text-xl">📭</span>
+                                                    <p className="text-[10px] font-bold text-slate-400">This table is empty!</p>
+                                                    <button onClick={() => { setSelectedTableId(table.id); setBuilderCriteria([]); if (pasteAreaRef.current) pasteAreaRef.current.innerHTML = ""; setScreen("CRITERIA_TABLE_BUILDER"); }}
+                                                      className="mt-1 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-[9px] font-bold uppercase rounded-md transition-colors">
+                                                      Click "Edit" to Build Table
+                                                    </button>
+                                                  </div>
+                                                ) : (
                                                 <table className="w-full text-left border-collapse bg-white table-fixed">
                                                   <tbody>
                                                     {table.rows.map(row => {
@@ -1804,6 +1814,7 @@ export default function App() {
                                                     })}
                                                   </tbody>
                                                 </table>
+                                                )}
                                               </div>
                                             </div>
                                           )}
