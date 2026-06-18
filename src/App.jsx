@@ -2570,7 +2570,7 @@ export default function App() {
   };
 
   return (
-    <div className="w-full min-h-screen">
+    <div className={`w-full min-h-screen ${(screen === 'ADMIN_HOME' || screen === 'CANVAS_COMPOSER') ? 'h-screen overflow-hidden' : ''}`}>
       {screen === 'GATE' && renderGateway()}
       {screen === 'PLAYER_HOME' && renderPlayerHome()}
       {screen === 'GAME' && renderGame()}
