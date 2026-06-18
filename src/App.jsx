@@ -189,12 +189,17 @@ export default function App() {
 
   const parseNumericalData = (label) => {
     if (!label) return null;
-    const match = label.match(/(\d+(?:\.\d+)?)\s*([a-zA-Z/%]+(?: [a-zA-Z/%]+)*)?/);
+    // Match: optional prefix words, then a number, then optional suffix unit
+    const match = label.match(/^(.*?)(\d+(?:[.,]\d+)?(?:[-–]\d+(?:[.,]\d+)?)?)\s*([a-zA-Z°/%]+(?: [a-zA-Z°/%]+)*)?\s*$/);
     if (!match) return null;
-    const number = match[1];
-    const suffix = match[2] ? match[2].trim() : '';
-    const redacted = label.replace(number, '___');
-    return { number, suffix, redacted, original: label };
+    const prefix = (match[1] || '').trim();
+    const number = match[2].replace(',', '.');
+    const suffix = (match[3] || '').trim();
+    // Redacted: replace the number with ___
+    const redacted = label.replace(match[2], '___');
+    // Unit key: normalized suffix for grouping distractors (lowercase, no spaces)
+    const unitKey = suffix.toLowerCase().replace(/\s+/g, '');
+    return { number, suffix, unitKey, prefix, redacted, original: label };
   };
 
   // ════════════════════════════════════════════════════════════════════════════
@@ -411,16 +416,33 @@ export default function App() {
 
   const loadNumericalSlide = (chapterTablesParam, configCanvas = null, qIdx = 0) => {
     const chapterTables = chapterTablesParam || activeChapterTables;
-    const allTiles = chapterTables.flatMap(t => (t.rows||[]).flatMap(r => (r.cells||[]).flatMap(c => (c.tiles||[]).flatMap(tile => {
-      const items = [{
-        tileId: tile.id, label: tile.label, criterionId: r.id, criterionFullText: c.text,
-        criterionCategory: t.name, tableId: t.id, tableName: t.name
-      }];
-      if (tile.subtiles) items.push(...tile.subtiles.map(s => ({
-        ...items[0], tileId: s.id, label: s.label
-      })));
-      return items;
-    }))));
+
+    // Build a flat tile list with FULL heading context:
+    // { tileId, label, criterionFullText, criterionCategory (table name),
+    //   headingText (last seen heading row text), tableName }
+    const allTiles = [];
+    chapterTables.forEach(t => {
+      let lastHeadingText = '';
+      (t.rows || []).forEach(r => {
+        if (r.isHeading) {
+          lastHeadingText = (r.cells || []).map(c => c.text).filter(Boolean).join(' / ');
+          return;
+        }
+        (r.cells || []).forEach(c => {
+          (c.tiles || []).forEach(tile => {
+            const base = {
+              tileId: tile.id, label: tile.label,
+              criterionFullText: c.text || '',
+              criterionCategory: t.name || '',
+              headingText: lastHeadingText,
+              tableName: t.name || ''
+            };
+            allTiles.push(base);
+            (tile.subtiles || []).forEach(s => allTiles.push({ ...base, tileId: s.id, label: s.label }));
+          });
+        });
+      });
+    });
 
     const numTiles = allTiles.filter(t => parseNumericalData(t.label));
     if (numTiles.length < 4) {
@@ -430,6 +452,36 @@ export default function App() {
       return false;
     }
 
+    // --- Helper: find best 3 distractors for a target tile ---
+    const findDistractors = (target, excludeIds = []) => {
+      const targetData = parseNumericalData(target.label);
+      const exclude = new Set([target.tileId, ...excludeIds]);
+      // 1st choice: same unitKey (e.g. "°c", "mmhg", "bpm")
+      let pool = numTiles.filter(t => {
+        if (exclude.has(t.tileId)) return false;
+        const d = parseNumericalData(t.label);
+        return d && d.unitKey === targetData.unitKey;
+      });
+      // 2nd choice: same suffix string
+      if (pool.length < 3) {
+        pool = numTiles.filter(t => {
+          if (exclude.has(t.tileId)) return false;
+          const d = parseNumericalData(t.label);
+          return d && d.suffix === targetData.suffix;
+        });
+      }
+      // 3rd choice: same table
+      if (pool.length < 3) {
+        pool = numTiles.filter(t => {
+          if (exclude.has(t.tileId)) return false;
+          return t.tableName === target.tableName;
+        });
+      }
+      // Last resort: any numerical tile
+      if (pool.length < 3) pool = numTiles.filter(t => !exclude.has(t.tileId));
+      return pool.sort(() => Math.random() - 0.5).slice(0, 3);
+    };
+
     let targetTile;
     let distractors = [];
     let customQuestion = null;
@@ -437,49 +489,57 @@ export default function App() {
     if (configCanvas && configCanvas.questions[qIdx]) {
       customQuestion = configCanvas.questions[qIdx];
       targetTile = allTiles.find(t => t.tileId === customQuestion.targetTileId);
-      distractors = (customQuestion.decoyTileIds || []).map(id => allTiles.find(t => t.tileId === id)).filter(Boolean);
+      if (targetTile) {
+        // Use admin-set decoys if provided, else auto-match same-unit
+        const adminDecoys = (customQuestion.decoyTileIds || [])
+          .map(id => allTiles.find(t => t.tileId === id))
+          .filter(Boolean);
+        distractors = adminDecoys.length >= 3 ? adminDecoys : findDistractors(targetTile);
+      }
     }
 
     if (!targetTile) {
-       targetTile = numTiles[Math.floor(Math.random() * numTiles.length)];
-       const targetData = parseNumericalData(targetTile.label);
-       
-       // Try to find distractors with the EXACT same suffix
-       let possibleDistractors = allTiles.filter(t => {
-         if (t.tileId === targetTile.tileId) return false;
-         const data = parseNumericalData(t.label);
-         return data && data.suffix === targetData.suffix;
-       });
-       
-       // If we don't have enough exact suffix matches, fall back to any numerical tile
-       if (possibleDistractors.length < 3) {
-         possibleDistractors = numTiles.filter(t => t.tileId !== targetTile.tileId);
-       }
-       
-       distractors = possibleDistractors.sort(() => Math.random() - 0.5).slice(0, 3);
+      targetTile = numTiles[Math.floor(Math.random() * numTiles.length)];
+      distractors = findDistractors(targetTile);
     }
 
     const targetData = parseNumericalData(targetTile.label);
-    const autoPrompt = `${targetTile.criterionCategory} ${targetTile.criterionFullText} ${targetData?.redacted || ''}`.trim();
-    setActiveTargetObjective(p => ({ 
-      ...p, 
-      id: targetTile.tileId, 
-      diagnosis: customQuestion?.prompt || autoPrompt, 
-      subheading: customQuestion?.subheading || "Tap the matching numerical value" 
+
+    // Build the question stem: "TableName — Heading — criterion: ___ unit"
+    const buildAutoStem = (tile, data) => {
+      const parts = [tile.criterionCategory];
+      if (tile.headingText && tile.headingText !== tile.criterionCategory) parts.push(tile.headingText);
+      if (tile.criterionFullText && tile.criterionFullText !== tile.headingText) parts.push(tile.criterionFullText);
+      parts.push(data?.redacted || tile.label);
+      return parts.filter(Boolean).join(' — ');
+    };
+
+    const prompt = customQuestion?.prompt || buildAutoStem(targetTile, targetData);
+    const subheading = customQuestion?.subheading || 'Select the correct numerical value';
+
+    setActiveTargetObjective(p => ({
+      ...p,
+      id: targetTile.tileId,
+      diagnosis: prompt,
+      subheading,
+      numericalSuffix: targetData?.suffix || '',   // stored for display
+      numericalAnswer: targetData?.number || targetTile.label
     }));
-    
+
     const board = [targetTile, ...distractors].sort(() => Math.random() - 0.5);
 
     setSessionAuditLog(p => [
-      ...p, 
+      ...p,
       ...board.map(t => ({ tileId: t.tileId, solved: false, skipped: false, presentedOnly: true }))
     ]);
 
     setTotalTargetCount(p => p + 1);
     setBoardTiles(board.map(c => ({ criterion: c, solved: false, errorState: false })));
-    setTimeRemaining(Math.max(5, getInitialTime() - (score.correct * 2))); // speeds up
+    setTimeRemaining(Math.max(5, getInitialTime() - (score.correct * 2)));
     setScreen('GAME');
   };
+
+
 
   const loadOddOneOutSlide = (chapterTablesParam, configCanvas = null, qIdx = 0) => {
     const chapterTables = chapterTablesParam || activeChapterTables;
@@ -1039,25 +1099,33 @@ export default function App() {
             if (q.targetTileId === tileId) return { ...q, targetTileId: null };
             if (q.decoyTileIds?.includes(tileId)) return { ...q, decoyTileIds: q.decoyTileIds.filter(i => i !== tileId) };
             if (!q.targetTileId) {
-               let label = '';
-               let heading = '';
-               let subheading = '';
+               // Build full context stem: TableName — HeadingText — CriterionText — ___unit
+               let label = '', tableName = '', lastHeading = '', criterionText = '';
                for (const t of criteriaTables) {
+                 let lh = '';
                  for (const r of t.rows || []) {
-                   if (r.isHeading) continue;
+                   if (r.isHeading) { lh = (r.cells||[]).map(c2=>c2.text).filter(Boolean).join(' / '); continue; }
                    for (const cell of r.cells || []) {
-                     for (const tile of cell.tiles || []) {
-                       if (tile.id === tileId) { label = tile.label; heading = t.name; subheading = cell.text; }
-                       if (tile.subtiles) tile.subtiles.forEach(s => { if (s.id === tileId) { label = s.label; heading = t.name; subheading = cell.text; } });
+                     const allTileItems = (cell.tiles||[]).flatMap(tile => [tile, ...(tile.subtiles||[])]);
+                     if (allTileItems.find(tile => tile.id === tileId)) {
+                       label = allTileItems.find(tile => tile.id === tileId)?.label || '';
+                       tableName = t.name || '';
+                       lastHeading = lh;
+                       criterionText = cell.text || '';
                      }
                    }
                  }
                }
-               const redacted = parseNumericalData(label)?.redacted || '';
-               const autoPrompt = `${heading} ${subheading} ${redacted}`.trim();
-               return { ...q, targetTileId: tileId, prompt: autoPrompt || q.prompt };
+               const data = parseNumericalData(label);
+               const parts = [tableName];
+               if (lastHeading && lastHeading !== tableName) parts.push(lastHeading);
+               if (criterionText && criterionText !== lastHeading) parts.push(criterionText);
+               if (data?.redacted) parts.push(data.redacted);
+               const autoPrompt = parts.filter(Boolean).join(' — ');
+               return { ...q, targetTileId: tileId, prompt: q.prompt || autoPrompt };
             }
             if ((q.decoyTileIds || []).length < 3) return { ...q, decoyTileIds: [...(q.decoyTileIds || []), tileId] };
+
           } else if (c.type === 'ODD_ONE_OUT') {
             if (q.correctTileIds?.includes(tileId)) return { ...q, correctTileIds: q.correctTileIds.filter(i => i !== tileId) };
             if (q.distractorTileId === tileId) return { ...q, distractorTileId: null };
@@ -1472,7 +1540,14 @@ export default function App() {
         </div>
         <div className="mx-3 mt-3 bg-white p-3 rounded-xl border border-slate-200 shadow-sm text-center">
           <span className="text-[10px] font-bold text-clinical-blue uppercase tracking-widest">{activeTargetObjective.subheading || 'Find:'}</span>
-          <h2 className={`font-black tracking-tight mt-0.5 leading-tight ${currentSubMode === 'NUMERICAL' ? 'text-4xl text-amber-600' : 'text-lg text-slate-900'}`}>{activeTargetObjective.diagnosis}</h2>
+          {currentSubMode === 'NUMERICAL' ? (
+            <>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-0.5 mb-1">Select the correct value for:</p>
+              <h2 className="text-base font-black text-slate-900 leading-snug">{activeTargetObjective.diagnosis}</h2>
+            </>
+          ) : (
+            <h2 className={`font-black tracking-tight mt-0.5 leading-tight text-lg text-slate-900`}>{activeTargetObjective.diagnosis}</h2>
+          )}
           {currentSubMode === 'CANVAS' && <p className="text-[9px] text-slate-400 mt-1 text-left">Tap all matching tiles · ½ badges = jigsaw pair</p>}
         </div>
 
@@ -1480,12 +1555,26 @@ export default function App() {
           {currentSubMode === 'NUMERICAL' ? (
             <div className="flex flex-col items-center justify-center gap-4 w-full px-4 h-full">
               <div className="grid grid-cols-2 gap-4 w-full max-w-md my-auto">
-                {boardTiles.map((tile, idx) => (
-                  <div key={idx} onClick={() => handleTileTap(idx)} 
-                    className={`aspect-[3/2] flex flex-col items-center justify-center rounded-3xl cursor-pointer active:scale-95 transition-all shadow-lg border-b-4 border-2 ${tile.solved ? 'bg-clinical-green border-emerald-600 text-white pointer-events-none' : tile.errorState ? 'bg-clinical-crimson border-rose-700 text-white animate-shake' : 'bg-white border-slate-300 hover:border-amber-400 hover:bg-amber-50 hover:-translate-y-1'}`}>
-                    <span className="text-5xl font-black tracking-tighter">{parseNumericalData(tile.criterion.label)?.number || tile.criterion.label}</span>
-                  </div>
-                ))}
+                {boardTiles.map((tile, idx) => {
+                  const numData = parseNumericalData(tile.criterion.label);
+                  return (
+                    <div key={idx} onClick={() => handleTileTap(idx)}
+                      className={`aspect-[3/2] flex flex-col items-center justify-center rounded-3xl cursor-pointer active:scale-95 transition-all shadow-lg border-b-4 border-2 ${
+                        tile.solved ? 'bg-emerald-500 border-emerald-700 text-white pointer-events-none' :
+                        tile.errorState ? 'bg-rose-500 border-rose-700 text-white animate-shake' :
+                        'bg-white border-slate-200 hover:border-amber-400 hover:bg-amber-50 hover:-translate-y-1'
+                      }`}>
+                      <span className={`text-5xl font-black tracking-tighter leading-none ${tile.solved ? 'text-white' : tile.errorState ? 'text-white' : 'text-amber-600'}`}>
+                        {numData?.number || tile.criterion.label}
+                      </span>
+                      {numData?.suffix && (
+                        <span className={`text-sm font-bold mt-1 ${tile.solved ? 'text-emerald-100' : tile.errorState ? 'text-rose-100' : 'text-slate-400'}`}>
+                          {numData.suffix}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           ) : (
@@ -2256,39 +2345,87 @@ export default function App() {
   const autoGenerateArcadeConfig = (canvasId) => {
     const canvas = canvasConfigs.find(c => c.id === canvasId);
     if (!canvas) return;
-    
+
     const tables = criteriaTables.filter(t => t.chapter === canvas.chapter);
-    const allTiles = tables.flatMap(t => (t.rows||[]).filter(r => !r.isHeading).flatMap(r => (r.cells||[]).flatMap(c => (c.tiles||[]).flatMap(tile => [tile, ...(tile.subtiles||[])]).map(t_obj => ({
-      tileId: t_obj.id, label: t_obj.label, criterionId: r.id, criterionFullText: c.text,
-      criterionCategory: t.name, tableId: t.id, tableName: t.name
-    })))));
+
+    // Build tiles with full heading context (same as loadNumericalSlide)
+    const allTiles = [];
+    tables.forEach(t => {
+      let lastHeadingText = '';
+      (t.rows || []).forEach(r => {
+        if (r.isHeading) {
+          lastHeadingText = (r.cells || []).map(c => c.text).filter(Boolean).join(' / ');
+          return;
+        }
+        (r.cells || []).forEach(c => {
+          (c.tiles || []).forEach(tile => {
+            const base = {
+              tileId: tile.id, label: tile.label,
+              criterionFullText: c.text || '',
+              criterionCategory: t.name || '',
+              headingText: lastHeadingText,
+              tableName: t.name || ''
+            };
+            allTiles.push(base);
+            (tile.subtiles || []).forEach(s => allTiles.push({ ...base, tileId: s.id, label: s.label }));
+          });
+        });
+      });
+    });
 
     let generatedQuestions = [];
 
     if (canvas.type === 'NUMERICAL') {
        const numTiles = allTiles.filter(t => parseNumericalData(t.label));
        if (numTiles.length < 4) return alert('Not enough numerical tiles in this chapter (Need 4).');
-       
-       for (let i = 0; i < 5; i++) {
-         const target = numTiles[Math.floor(Math.random() * numTiles.length)];
+
+       // Smart distractor finder: same unit → same suffix → any numerical
+       const findAutoDistractors = (target) => {
          const targetData = parseNumericalData(target.label);
-         
-         let possibleDistractors = allTiles.filter(t => {
-           if (t.tileId === target.tileId) return false;
-           const data = parseNumericalData(t.label);
-           return data && data.suffix === targetData.suffix;
+         const exclude = new Set([target.tileId]);
+         // 1st: same unitKey
+         let pool = numTiles.filter(t => {
+           if (exclude.has(t.tileId)) return false;
+           const d = parseNumericalData(t.label);
+           return d && d.unitKey === targetData.unitKey;
          });
-         
-         if (possibleDistractors.length < 3) {
-           possibleDistractors = numTiles.filter(t => t.tileId !== target.tileId);
+         // 2nd: same suffix string
+         if (pool.length < 3) {
+           pool = numTiles.filter(t => {
+             if (exclude.has(t.tileId)) return false;
+             const d = parseNumericalData(t.label);
+             return d && d.suffix === targetData.suffix;
+           });
          }
-         
-         const distractors = possibleDistractors.sort(() => Math.random() - 0.5).slice(0, 3);
-         const autoPrompt = `${target.criterionCategory} ${target.criterionFullText} ${targetData?.redacted || ''}`.trim();
+         // 3rd: same table
+         if (pool.length < 3) pool = numTiles.filter(t => !exclude.has(t.tileId) && t.tableName === target.tableName);
+         // Last resort: any
+         if (pool.length < 3) pool = numTiles.filter(t => !exclude.has(t.tileId));
+         return pool.sort(() => Math.random() - 0.5).slice(0, 3);
+       };
+
+       // Build question stem: TableName — HeadingText — Criterion — ___unit
+       const buildStem = (tile, data) => {
+         const parts = [tile.criterionCategory];
+         if (tile.headingText && tile.headingText !== tile.criterionCategory) parts.push(tile.headingText);
+         if (tile.criterionFullText && tile.criterionFullText !== tile.headingText) parts.push(tile.criterionFullText);
+         parts.push(data?.redacted || tile.label);
+         return parts.filter(Boolean).join(' — ');
+       };
+
+       // Pick unique targets for each question (avoid repeats)
+       const usedTargetIds = new Set();
+       for (let i = 0; i < Math.min(10, numTiles.length); i++) {
+         const available = numTiles.filter(t => !usedTargetIds.has(t.tileId));
+         if (!available.length) break;
+         const target = available[Math.floor(Math.random() * available.length)];
+         usedTargetIds.add(target.tileId);
+         const targetData = parseNumericalData(target.label);
+         const distractors = findAutoDistractors(target);
          generatedQuestions.push({
            id: crypto.randomUUID(),
-           prompt: autoPrompt,
-           subheading: "Tap the matching numerical value",
+           prompt: buildStem(target, targetData),
+           subheading: 'Select the correct numerical value',
            targetTileId: target.tileId,
            decoyTileIds: distractors.map(d => d.tileId)
          });
@@ -2455,37 +2592,114 @@ export default function App() {
                   );
                 })}
                 
-                {type === 'NUMERICAL' && (
-                  <>
-                    <div className="col-span-4 lg:col-span-6 mb-2">
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">📝 Question Prompt</p>
-                      <input type="text" value={activeQ.prompt || ''} onChange={e => updateQuestionPrompt(canvas.id, activeQ.id, e.target.value)}
-                        className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-clinical-blue" placeholder="e.g. Systolic BP < ___ mm Hg" />
-                    </div>
-                    <div className="col-span-2 lg:col-span-3 mb-2">
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">🎯 Target</p>
-                      <div className={`p-3 rounded-xl border-2 flex items-center justify-between transition-all ${selectedTileObjects.length > 0 ? 'bg-emerald-600 border-emerald-500 text-white shadow-md' : 'bg-slate-800/50 border-slate-700 border-dashed text-slate-500'}`}>
-                        {selectedTileObjects.length > 0 ? (
-                          <>
-                            <p className="text-xs font-bold">{selectedTileObjects[0].label}</p>
-                            <button onClick={() => toggleTileInCanvas(selectedTileObjects[0].id, canvas.id, activeQ.id)} className="text-[9px] font-black bg-rose-500 hover:bg-rose-600 px-2 py-1 rounded">DEL</button>
-                          </>
-                        ) : <span className="text-[9px] font-black uppercase tracking-widest opacity-30">Select below</span>}
+                {type === 'NUMERICAL' && (() => {
+                  // Derive target tile and decoy tiles from the question config
+                  const numericalAllTiles = (() => {
+                    const tiles = [];
+                    criteriaTables.filter(t => t.chapter === canvas.chapter).forEach(t => {
+                      let lastHeading = '';
+                      (t.rows || []).forEach(r => {
+                        if (r.isHeading) { lastHeading = (r.cells||[]).map(c=>c.text).filter(Boolean).join(' / '); return; }
+                        (r.cells || []).forEach(c => {
+                          (c.tiles || []).forEach(tile => {
+                            const base = { tileId: tile.id, label: tile.label, criterionFullText: c.text||'', criterionCategory: t.name||'', headingText: lastHeading, tableName: t.name||'' };
+                            tiles.push(base);
+                            (tile.subtiles||[]).forEach(s => tiles.push({ ...base, tileId: s.id, label: s.label }));
+                          });
+                        });
+                      });
+                    });
+                    return tiles;
+                  })();
+                  const numAllTiles = numericalAllTiles.filter(t => parseNumericalData(t.label));
+                  const targetTileObj = numericalAllTiles.find(t => t.tileId === activeQ.targetTileId);
+                  const decoyTileObjs = (activeQ.decoyTileIds || []).map(id => numericalAllTiles.find(t => t.tileId === id)).filter(Boolean);
+                  const targetData = targetTileObj ? parseNumericalData(targetTileObj.label) : null;
+
+                  // Auto-match: find same-unit distractors
+                  const autoMatchDecoys = () => {
+                    if (!targetTileObj) return;
+                    const exclude = new Set([targetTileObj.tileId, ...(activeQ.decoyTileIds||[])]);
+                    let pool = numAllTiles.filter(t => {
+                      if (exclude.has(t.tileId)) return false;
+                      const d = parseNumericalData(t.label);
+                      return d && d.unitKey === targetData.unitKey;
+                    });
+                    if (pool.length < 3) pool = numAllTiles.filter(t => { if (exclude.has(t.tileId)) return false; const d = parseNumericalData(t.label); return d && d.suffix === targetData.suffix; });
+                    if (pool.length < 3) pool = numAllTiles.filter(t => !new Set([targetTileObj.tileId]).has(t.tileId));
+                    const picked = pool.sort(() => Math.random() - 0.5).slice(0, 3 - decoyTileObjs.length);
+                    setCanvasConfigs(p => p.map(c => c.id !== canvas.id ? c : { ...c, questions: c.questions.map(q => q.id !== activeQ.id ? q : { ...q, decoyTileIds: [...(q.decoyTileIds||[]), ...picked.map(d => d.tileId)] }) }));
+                  };
+
+                  // Build preview stem
+                  const previewStem = (() => {
+                    if (activeQ.prompt) return activeQ.prompt;
+                    if (!targetTileObj || !targetData) return '— tap a numerical tile below to set target —';
+                    const parts = [targetTileObj.criterionCategory];
+                    if (targetTileObj.headingText && targetTileObj.headingText !== targetTileObj.criterionCategory) parts.push(targetTileObj.headingText);
+                    if (targetTileObj.criterionFullText && targetTileObj.criterionFullText !== targetTileObj.headingText) parts.push(targetTileObj.criterionFullText);
+                    parts.push(targetData.redacted);
+                    return parts.filter(Boolean).join(' — ');
+                  })();
+
+                  return (
+                    <div className="col-span-full space-y-3">
+                      {/* Question Stem Preview */}
+                      <div className="bg-amber-950/30 border border-amber-700/40 rounded-xl p-3">
+                        <p className="text-[9px] font-black text-amber-400 uppercase tracking-widest mb-1">📝 Question Stem Preview</p>
+                        <p className="text-sm font-bold text-amber-100 leading-snug">{previewStem}</p>
+                        {!activeQ.prompt && targetTileObj && (
+                          <p className="text-[9px] text-amber-500 mt-1">Auto-generated. Override in the Heading field above.</p>
+                        )}
                       </div>
-                    </div>
-                    <div className="col-span-2 lg:col-span-3 mb-2">
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Decoys</p>
-                      <div className="space-y-2 max-h-32 overflow-y-auto">
-                        {selectedTileObjects.slice(1).map(tile => (
-                          <div key={tile.id} className="p-2 rounded-lg border-2 bg-slate-700 border-slate-600 text-white flex items-center justify-between">
-                            <p className="text-[10px] font-bold">{tile.label}</p>
-                            <button onClick={() => toggleTileInCanvas(tile.id, canvas.id, activeQ.id)} className="text-[9px] font-black bg-rose-500 hover:bg-rose-600 px-1.5 py-0.5 rounded">DEL</button>
+
+                      {/* Target + Decoys row */}
+                      <div className="grid grid-cols-4 gap-2">
+                        {/* Target */}
+                        <div className="col-span-1">
+                          <p className="text-[9px] font-black text-emerald-400 uppercase tracking-widest mb-1">🎯 Answer</p>
+                          <div className={`rounded-xl border-2 p-3 flex flex-col items-center justify-center min-h-[72px] transition-all ${targetTileObj ? 'bg-emerald-600 border-emerald-400 shadow-lg shadow-emerald-900/50' : 'bg-slate-800/50 border-dashed border-slate-600'}`}>
+                            {targetTileObj ? (
+                              <>
+                                <span className="text-2xl font-black text-white">{targetData?.number}</span>
+                                <span className="text-[10px] text-emerald-200 font-bold">{targetData?.suffix}</span>
+                                <button onClick={() => setCanvasConfigs(p => p.map(c => c.id !== canvas.id ? c : { ...c, questions: c.questions.map(q => q.id !== activeQ.id ? q : { ...q, targetTileId: null }) }))} className="mt-1 text-[8px] font-black text-rose-300 hover:text-rose-100 uppercase">✕ clear</button>
+                              </>
+                            ) : <span className="text-[9px] font-black text-slate-500 uppercase text-center">tap tile below</span>}
                           </div>
-                        ))}
+                        </div>
+
+                        {/* Decoys */}
+                        {[0, 1, 2].map(di => {
+                          const decoyTile = decoyTileObjs[di];
+                          const decoyData = decoyTile ? parseNumericalData(decoyTile.label) : null;
+                          return (
+                            <div key={di} className="col-span-1">
+                              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">❌ Decoy {di + 1}</p>
+                              <div className={`rounded-xl border-2 p-3 flex flex-col items-center justify-center min-h-[72px] transition-all ${decoyTile ? 'bg-slate-700 border-slate-500' : 'bg-slate-800/50 border-dashed border-slate-600'}`}>
+                                {decoyTile ? (
+                                  <>
+                                    <span className="text-2xl font-black text-white">{decoyData?.number}</span>
+                                    <span className="text-[10px] text-slate-300 font-bold">{decoyData?.suffix}</span>
+                                    <button onClick={() => setCanvasConfigs(p => p.map(c => c.id !== canvas.id ? c : { ...c, questions: c.questions.map(q => q.id !== activeQ.id ? q : { ...q, decoyTileIds: (q.decoyTileIds||[]).filter(id => id !== decoyTile.tileId) }) }))} className="mt-1 text-[8px] font-black text-rose-400 hover:text-rose-200 uppercase">✕ clear</button>
+                                  </>
+                                ) : <span className="text-[9px] font-black text-slate-500 uppercase text-center">empty</span>}
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
+
+                      {/* Auto-match button */}
+                      {targetTileObj && decoyTileObjs.length < 3 && (
+                        <button onClick={autoMatchDecoys} className="w-full py-1.5 bg-amber-600 hover:bg-amber-500 text-white font-black text-[10px] uppercase rounded-lg shadow-sm transition-all">
+                          ⚡ Auto-Match {3 - decoyTileObjs.length} Same-Unit Decoy{3 - decoyTileObjs.length !== 1 ? 's' : ''}
+                        </button>
+                      )}
                     </div>
-                  </>
-                )}
+                  );
+                })()}
+
                 
                 {type === 'ODD_ONE_OUT' && (
                   <>
