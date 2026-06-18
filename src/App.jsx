@@ -134,6 +134,7 @@ export default function App() {
   const [newChapterInput, setNewChapterInput] = useState('');
   const [newChapterSubject, setNewChapterSubject] = useState('Medicine');
   const [newSubChapterName, setNewSubChapterName] = useState('');
+  const [newSubChapterParent, setNewSubChapterParent] = useState('');
   const [newTableName, setNewTableName] = useState('');
   const [newTableChapter, setNewTableChapter] = useState('Cardiology');
   const [newCanvasName, setNewCanvasName] = useState('');
