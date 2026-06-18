@@ -551,7 +551,7 @@ export default function App() {
     let correctFitTiles = [];
     let distractorTile = null;
     let diagnosis = "Which one doesn't belong?";
-    let subheading = "Identify the incorrect fit for this category";
+    let subheading = "Tap the tile that does NOT fit this category";
 
     if (configCanvas && configCanvas.questions[qIdx]) {
       const customQuestion = configCanvas.questions[qIdx];
@@ -563,24 +563,30 @@ export default function App() {
     }
 
     if (!distractorTile || correctFitTiles.length === 0) {
+      // Auto-generate from all canvas questions in this chapter — use ALL tiles from each question
       const chapterCanvases = canvasConfigs.filter(c => c.chapter === chapterTables[0]?.chapter && (!c.type || c.type === 'CANVAS'));
-      const playableQuestions = chapterCanvases.flatMap(c => c.questions.filter(q => q.selectedTileIds && q.selectedTileIds.length >= 3).map(q => ({ canvas: c, question: q })));
+      const playableQuestions = chapterCanvases.flatMap(c => c.questions.filter(q => q.selectedTileIds && q.selectedTileIds.length >= 2).map(q => ({ canvas: c, question: q })));
       if (playableQuestions.length === 0) {
         if (activeGameMode === 'MIXED_MARATHON') return loadCanvasSlide(chapterTablesParam, null, 0);
-        alert('No valid Canvas configs found with >=3 tiles to base Odd-One-Outs on.');
+        alert('No valid Canvas configs found with ≥2 tiles to base Odd-One-Outs on.');
         setScreen('PLAYER_HOME');
         return false;
       }
-      const selectedQ = playableQuestions[Math.floor(Math.random() * playableQuestions.length)].question;
+      const { canvas: srcCanvas, question: selectedQ } = playableQuestions[Math.floor(Math.random() * playableQuestions.length)];
+      // ALL correct tiles from this canvas question
       correctFitTiles = allChapterTiles
         .filter(t => selectedQ.selectedTileIds.includes(t.tileId))
-        .sort(() => Math.random() - 0.5)
-        .slice(0, 3)
         .map(t => ({ ...t, isDistractor: false }));
-      const otherTiles = allChapterTiles.filter(t => !selectedQ.selectedTileIds.includes(t.tileId));
-      if (!otherTiles.length) { advanceToNext(); return; }
-      distractorTile = { ...otherTiles[Math.floor(Math.random() * otherTiles.length)], isDistractor: true };
-      diagnosis = selectedQ.prompt || diagnosis;
+      // Distractor: a tile that belongs to a DIFFERENT canvas question in the chapter
+      const otherQTileIds = new Set(
+        chapterCanvases.flatMap(c => c.questions.filter(q => q.id !== selectedQ.id).flatMap(q => q.selectedTileIds || []))
+      );
+      const distractorPool = allChapterTiles.filter(t => otherQTileIds.has(t.tileId) && !selectedQ.selectedTileIds.includes(t.tileId));
+      const fallbackPool = allChapterTiles.filter(t => !selectedQ.selectedTileIds.includes(t.tileId));
+      const pool = distractorPool.length ? distractorPool : fallbackPool;
+      if (!pool.length) { advanceToNext(); return; }
+      distractorTile = { ...pool[Math.floor(Math.random() * pool.length)], isDistractor: true };
+      diagnosis = selectedQ.prompt || `${srcCanvas.name}: Which tile does NOT belong here?`;
     }
 
     const board = [...correctFitTiles, distractorTile].sort(() => Math.random() - 0.5);
@@ -593,7 +599,7 @@ export default function App() {
     
     setTotalTargetCount(p => p + 1);
     setBoardTiles(board.map(c => ({ criterion: c, solved: false, errorState: false })));
-    setTimeRemaining(Math.max(5, getInitialTime() - (score.correct * 2))); // speeds up
+    setTimeRemaining(Math.max(5, getInitialTime() - (score.correct * 2)));
     setScreen('GAME');
   };
 
@@ -1127,10 +1133,12 @@ export default function App() {
             if ((q.decoyTileIds || []).length < 3) return { ...q, decoyTileIds: [...(q.decoyTileIds || []), tileId] };
 
           } else if (c.type === 'ODD_ONE_OUT') {
+            // If already a correct tile → remove from correct
             if (q.correctTileIds?.includes(tileId)) return { ...q, correctTileIds: q.correctTileIds.filter(i => i !== tileId) };
+            // If it's currently the distractor → clear distractor
             if (q.distractorTileId === tileId) return { ...q, distractorTileId: null };
-            if ((q.correctTileIds || []).length < 3) return { ...q, correctTileIds: [...(q.correctTileIds || []), tileId] };
-            return { ...q, distractorTileId: tileId };
+            // Otherwise → add to correct tiles (no arbitrary limit — all canvas question tiles can be correct)
+            return { ...q, correctTileIds: [...(q.correctTileIds || []), tileId] };
           }
           return q;
         })
@@ -1578,31 +1586,32 @@ export default function App() {
               </div>
             </div>
           ) : (
-            <table className="w-full border-collapse table-fixed my-auto">
-              <tbody>
-                {rows.map((row, ri) => (
-                  <tr key={ri}>
-                    {row.map((tile, ci) => {
-                      const idx = ri * cols + ci;
-                      const isPair = tile.criterion.tileCount === 2 && currentSubMode === 'CANVAS';
-                      const color = getTileColor(tile.criterion.criterionCategory);
-                      return (
-                        <td key={ci} onClick={() => handleTileTap(idx)}
-                          className={`h-24 p-2 relative cursor-pointer active:scale-95 transition-all text-center align-middle border border-slate-300 shadow-sm rounded-lg m-1 ${tile.solved ? 'bg-clinical-green border-clinical-green text-white pointer-events-none' : tile.errorState ? 'bg-clinical-crimson border-clinical-crimson text-white animate-shake' : color}`}
-                          style={{ display: 'table-cell', borderCollapse: 'separate', borderSpacing: '4px' }}>
-                          {isPair && !tile.solved && !tile.errorState && (
-                            <div className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-white/70 flex items-center justify-center text-[6px] font-black opacity-80">½</div>
-                          )}
-                          <p className={`font-black leading-tight tracking-tight ${currentSubMode !== 'CANVAS' ? 'text-sm' : 'text-[10px]'}`}>
-                            {tile.criterion.label}
-                          </p>
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            // CANVAS / ODD_ONE_OUT tile grid — flex-wrap adapts to any tile count
+            <div className={`flex flex-wrap justify-center gap-2 px-3 py-2 my-auto overflow-y-auto max-h-full`}>
+              {boardTiles.map((tile, idx) => {
+                const color = getTileColor(tile.criterion.criterionCategory);
+                const isPair = tile.criterion.tileCount === 2 && currentSubMode === 'CANVAS';
+                const tileCount = boardTiles.length;
+                // Adapt text + size based on tile count
+                const sizeClass = tileCount <= 4 ? 'min-w-[140px] min-h-[80px] p-3 text-sm'
+                  : tileCount <= 6 ? 'min-w-[120px] min-h-[72px] p-2.5 text-xs'
+                  : tileCount <= 10 ? 'min-w-[100px] min-h-[64px] p-2 text-[11px]'
+                  : 'min-w-[80px] min-h-[56px] p-1.5 text-[10px]';
+                return (
+                  <div key={idx} onClick={() => handleTileTap(idx)}
+                    className={`relative flex flex-col items-center justify-center rounded-xl border-2 cursor-pointer active:scale-95 transition-all text-center shadow-sm flex-shrink-0 ${sizeClass} ${
+                      tile.solved ? 'bg-emerald-500 border-emerald-700 text-white pointer-events-none shadow-emerald-200' :
+                      tile.errorState ? 'bg-rose-500 border-rose-700 text-white animate-shake shadow-rose-200' :
+                      color
+                    }`}>
+                    {isPair && !tile.solved && !tile.errorState && (
+                      <div className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-white/70 flex items-center justify-center text-[6px] font-black opacity-80">½</div>
+                    )}
+                    <p className="font-black leading-tight tracking-tight">{tile.criterion.label}</p>
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
 
@@ -2432,23 +2441,36 @@ export default function App() {
        }
     } else if (canvas.type === 'ODD_ONE_OUT') {
        const chapterCanvases = canvasConfigs.filter(c => c.chapter === canvas.chapter && (!c.type || c.type === 'CANVAS'));
-       const playableQuestions = chapterCanvases.flatMap(c => c.questions.filter(q => q.selectedTileIds && q.selectedTileIds.length >= 3).map(q => ({ canvas: c, question: q })));
-       if (playableQuestions.length === 0) return alert('No canvas configs with >=3 tiles found in this chapter to base Odd-One-Outs on.');
-       
-       for (let i = 0; i < 5; i++) {
-         const selectedQ = playableQuestions[Math.floor(Math.random() * playableQuestions.length)].question;
-         const corrects = allTiles.filter(t => selectedQ.selectedTileIds.includes(t.tileId)).sort(() => Math.random() - 0.5).slice(0, 3);
-         const otherTiles = allTiles.filter(t => !selectedQ.selectedTileIds.includes(t.tileId));
-         const distractor = otherTiles[Math.floor(Math.random() * otherTiles.length)];
-         
+       const playableQs = chapterCanvases.flatMap(c =>
+         c.questions.filter(q => q.selectedTileIds && q.selectedTileIds.length >= 2)
+           .map(q => ({ canvasName: c.name, question: q }))
+       );
+       if (playableQs.length === 0) return alert('No Canvas questions with >=2 tiles found in this chapter.');
+
+       // One OOO question per canvas question -- ALL correct tiles + 1 distractor from another question
+       const usedQIds = new Set();
+       for (const { canvasName, question: srcQ } of playableQs) {
+         if (usedQIds.has(srcQ.id)) continue;
+         usedQIds.add(srcQ.id);
+         const correctIds = srcQ.selectedTileIds || [];
+         const otherQIds = new Set(
+           playableQs.filter(pq => pq.question.id !== srcQ.id).flatMap(pq => pq.question.selectedTileIds || [])
+         );
+         const distractorPool = allTiles.filter(t => otherQIds.has(t.tileId) && !correctIds.includes(t.tileId));
+         const fallback = allTiles.filter(t => !correctIds.includes(t.tileId));
+         const pool = distractorPool.length ? distractorPool : fallback;
+         if (!pool.length) continue;
+         const distractor = pool[Math.floor(Math.random() * pool.length)];
          generatedQuestions.push({
            id: crypto.randomUUID(),
-           prompt: selectedQ.prompt || "Which one doesn't belong?",
-           subheading: "Identify the incorrect fit for this category",
-           correctTileIds: corrects.map(c => c.tileId),
-           distractorTileId: distractor?.tileId
+           prompt: srcQ.prompt || `${canvasName}: Which tile does NOT belong here?`,
+           subheading: 'Tap the tile that does NOT fit this category',
+           correctTileIds: correctIds,
+           distractorTileId: distractor.tileId,
+           sourceCanvasQuestionId: srcQ.id
          });
        }
+       if (generatedQuestions.length === 0) return alert('Could not generate Odd-One-Out questions. Ensure canvas questions have tiles and other tiles exist in the chapter.');
     }
 
     if (generatedQuestions.length > 0) {
@@ -2701,41 +2723,83 @@ export default function App() {
                 })()}
 
                 
-                {type === 'ODD_ONE_OUT' && (
-                  <>
-                    <div className="col-span-4 lg:col-span-6 mb-2">
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">📝 Question Prompt</p>
-                      <input type="text" value={activeQ.prompt || ''} onChange={e => updateQuestionPrompt(canvas.id, activeQ.id, e.target.value)}
-                        className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-clinical-blue" placeholder="e.g. Which of the following is NOT..." />
-                    </div>
-                    <div className="col-span-2 lg:col-span-3 mb-2">
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">🎯 Odd One Out (Target)</p>
-                      <div className={`p-3 rounded-xl border-2 flex items-center justify-between transition-all ${activeQ.targetTileId ? 'bg-rose-600 border-rose-500 text-white shadow-md' : 'bg-slate-800/50 border-slate-700 border-dashed text-slate-500'}`}>
-                        {activeQ.targetTileId ? (
-                          <>
-                            <p className="text-xs font-bold">{allTableTiles.find(t => t.id === activeQ.targetTileId)?.label || 'Selected'}</p>
-                            <button onClick={() => setCanvasConfigs(p => p.map(c => c.id !== canvas.id ? c : { ...c, questions: c.questions.map(q => q.id === activeQ.id ? { ...q, targetTileId: null } : q) }))} className="text-[9px] font-black bg-slate-900/50 hover:bg-slate-900 px-2 py-1 rounded">DEL</button>
-                          </>
-                        ) : <span className="text-[9px] font-black uppercase tracking-widest opacity-30">Select below</span>}
-                      </div>
-                    </div>
-                    <div className="col-span-2 lg:col-span-3 mb-2">
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Regular Tiles (Decoys)</p>
-                      <div className="space-y-2 max-h-32 overflow-y-auto">
-                        {(activeQ.correctTileIds||[]).map(id => {
-                          const tile = allTableTiles.find(t => t.id === id);
-                          if (!tile) return null;
-                          return (
-                            <div key={tile.id} className="p-2 rounded-lg border-2 bg-slate-700 border-slate-600 text-white flex items-center justify-between">
-                              <p className="text-[10px] font-bold">{tile.label}</p>
-                              <button onClick={() => setCanvasConfigs(p => p.map(c => c.id !== canvas.id ? c : { ...c, questions: c.questions.map(q => q.id === activeQ.id ? { ...q, correctTileIds: q.correctTileIds.filter(tid => tid !== tile.id) } : q) }))} className="text-[9px] font-black bg-rose-500 hover:bg-rose-600 px-1.5 py-0.5 rounded">DEL</button>
+                {type === 'ODD_ONE_OUT' && (() => {
+                  const oooAllTiles = allTableTiles; // already derived above
+                  const correctTileObjs = (activeQ.correctTileIds || []).map(id => oooAllTiles.find(t => t.id === id)).filter(Boolean);
+                  const distractorObj = activeQ.distractorTileId ? oooAllTiles.find(t => t.id === activeQ.distractorTileId) : null;
+
+                  const swapDistractor = () => {
+                    const correctSet = new Set(activeQ.correctTileIds || []);
+                    const otherCanvasQIds = new Set(
+                      canvasConfigs.filter(c => c.chapter === canvas.chapter && (!c.type || c.type === 'CANVAS'))
+                        .flatMap(c => c.questions.filter(q => !q.selectedTileIds?.some(id => correctSet.has(id))).flatMap(q => q.selectedTileIds || []))
+                    );
+                    const preferred = oooAllTiles.filter(t => otherCanvasQIds.has(t.id) && !correctSet.has(t.id));
+                    const fallback = oooAllTiles.filter(t => !correctSet.has(t.id));
+                    const pool = preferred.length ? preferred : fallback;
+                    if (!pool.length) return;
+                    const pick = pool[Math.floor(Math.random() * pool.length)];
+                    setCanvasConfigs(p => p.map(c => c.id !== canvas.id ? c : {
+                      ...c, questions: c.questions.map(q => q.id !== activeQ.id ? q : { ...q, distractorTileId: pick.id })
+                    }));
+                  };
+
+                  return (
+                    <div className="col-span-full space-y-3">
+                      {/* Hint from source canvas question */}
+                      {activeQ.sourceCanvasQuestionId && (
+                        <div className="bg-indigo-950/40 border border-indigo-700/30 rounded-lg px-3 py-1.5">
+                          <p className="text-[9px] font-black text-indigo-400 uppercase tracking-widest">
+                            Source: Canvas Q — {activeQ.prompt || 'Auto-generated from canvas question'}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Correct tiles (belong to the question) */}
+                      <div>
+                        <p className="text-[9px] font-black text-emerald-400 uppercase tracking-widest mb-2">
+                          ✅ Correct Tiles ({correctTileObjs.length}) — these all belong together
+                        </p>
+                        <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
+                          {correctTileObjs.length === 0 ? (
+                            <span className="text-[9px] text-slate-500 italic">None yet — tap tiles in the tables below, or click 🎲 Auto-Generate</span>
+                          ) : correctTileObjs.map(tile => (
+                            <div key={tile.id} className="flex items-center gap-1 bg-emerald-700/60 border border-emerald-500/40 text-emerald-100 px-2 py-1 rounded-lg">
+                              <span className="text-[10px] font-bold">{tile.label}</span>
+                              <button onClick={() => setCanvasConfigs(p => p.map(c => c.id !== canvas.id ? c : {
+                                ...c, questions: c.questions.map(q => q.id !== activeQ.id ? q : { ...q, correctTileIds: (q.correctTileIds||[]).filter(id => id !== tile.id) })
+                              }))} className="text-rose-400 hover:text-rose-200 font-black text-[9px] ml-0.5">✕</button>
                             </div>
-                          );
-                        })}
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Distractor tile */}
+                      <div>
+                        <p className="text-[9px] font-black text-rose-400 uppercase tracking-widest mb-2">
+                          ❌ Odd One Out (Distractor) — player must tap this
+                        </p>
+                        <div className="flex items-center gap-3">
+                          <div className={`flex-1 rounded-xl border-2 p-2.5 flex items-center justify-between transition-all ${distractorObj ? 'bg-rose-700/60 border-rose-500/60 text-white' : 'bg-slate-800/50 border-dashed border-slate-600 text-slate-500'}`}>
+                            {distractorObj ? (
+                              <>
+                                <span className="text-sm font-black">{distractorObj.label}</span>
+                                <button onClick={() => setCanvasConfigs(p => p.map(c => c.id !== canvas.id ? c : {
+                                  ...c, questions: c.questions.map(q => q.id !== activeQ.id ? q : { ...q, distractorTileId: null })
+                                }))} className="text-rose-300 hover:text-white text-[9px] font-black">✕ clear</button>
+                              </>
+                            ) : <span className="text-[9px] font-black uppercase">tap a tile below to set distractor</span>}
+                          </div>
+                          <button onClick={swapDistractor}
+                            className="px-3 py-2 bg-rose-600 hover:bg-rose-500 text-white font-black text-[9px] uppercase rounded-lg shadow-sm transition-all whitespace-nowrap">
+                            🔀 Swap Distractor
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </>
-                )}
+                  );
+                })()}
+
               </div>
             </div>
           </div>
