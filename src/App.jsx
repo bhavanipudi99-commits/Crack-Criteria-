@@ -199,7 +199,7 @@ export default function App() {
   // GAME SESSION
   // ════════════════════════════════════════════════════════════════════════════
 
-  const startGame = (chapterName, previewCanvasId = null, subjectName = null, isGlobal = false) => {
+  const startGame = (chapterName, targetCanvasId = null, subjectName = null, isGlobal = false, isPreview = false) => {
     let chapterTables = [];
     if (activeGameMode === 'MIXED_MARATHON') {
       if (isGlobal) {
@@ -224,7 +224,7 @@ export default function App() {
     setScore({ correct: 0, wrong: 0 });
     setTotalTargetCount(0);
     setSessionAuditLog([]);
-    setIsPreviewMode(!!previewCanvasId);
+    setIsPreviewMode(isPreview);
     setActiveChapterTables(chapterTables);
 
     if (activeGameMode === 'MIXED_MARATHON') {
@@ -238,7 +238,7 @@ export default function App() {
       loadMarathonSlide(chapterTables);
     } else if (activeGameMode === 'CANVAS') {
       let canvases = canvasConfigs.filter(c => c.chapter === chapterName && c.questions.some(q => q.selectedTileIds.length > 0));
-      if (previewCanvasId) canvases = canvases.filter(c => c.id === previewCanvasId);
+      if (targetCanvasId) canvases = canvases.filter(c => c.id === targetCanvasId);
       if (!canvases.length) {
         alert('No playable canvases with selected tiles here yet.');
         return;
@@ -1233,31 +1233,98 @@ export default function App() {
         </div>
         <div className="border-t border-slate-100 pt-3">
           <p className="text-[10px] text-slate-400 font-bold mb-2">Choose Chapter</p>
-          <div className="space-y-1.5 max-h-48 overflow-y-auto">
+          <div className="space-y-4 max-h-64 overflow-y-auto pr-2 bg-white rounded-lg p-2 border border-slate-100">
             {activeGameMode === 'MIXED_MARATHON' && (
-              <button onClick={() => startGame(null, null, null, true)}
-                className="w-full text-left py-2.5 px-3 rounded-lg bg-indigo-50 border border-indigo-200 hover:border-indigo-400 text-xs font-black text-indigo-800 transition-colors flex justify-between items-center mb-2">
-                <span>🌎 Run Global Marathon (All Subjects)</span>
-                <span className="text-[10px] font-black">Start Marathon →</span>
-              </button>
-            )}
-            {activeGameMode === 'MIXED_MARATHON' && appSubjects.map(subj => (
-              <button key={`subj-${subj}`} onClick={() => startGame(null, null, subj)}
-                className="w-full text-left py-2.5 px-3 rounded-lg bg-fuchsia-50 border border-fuchsia-200 hover:border-fuchsia-400 text-xs font-bold text-fuchsia-800 transition-colors flex justify-between items-center">
-                <span>🏆 Run Full Subject: {subj}</span>
-                <span className="text-[10px] font-black">Start Marathon →</span>
-              </button>
-            ))}
-            {appChapters.map(chap => {
-              const playableCanvases = canvasConfigs.filter(c => c.chapter === chap.name && c.questions.some(q => q.selectedTileIds.length > 0)).length;
-              return (
-                <button key={chap.id} onClick={() => startGame(chap.name)}
-                  className="w-full text-left py-2.5 px-3 rounded-lg bg-slate-50 border border-slate-200 hover:border-clinical-blue text-xs font-bold text-slate-700 transition-colors flex justify-between items-center">
-                  <span>{chap.subject} → {chap.name}</span>
-                  <span className={`text-[10px] font-black ${activeGameMode === 'CANVAS' && playableCanvases ? 'text-clinical-blue' : activeGameMode === 'CANVAS' ? 'text-slate-400' : 'text-clinical-blue'}`}>
-                    {activeGameMode === 'CANVAS' ? (playableCanvases ? `${playableCanvases} canvas${playableCanvases > 1 ? 'es' : ''} →` : 'Empty') : (activeGameMode === 'MIXED_MARATHON' ? 'Chapter Marathon →' : 'Play Arcade →')}
-                  </span>
+              <div className="mb-4 space-y-2">
+                <button onClick={() => startGame(null, null, null, true)}
+                  className="w-full text-left py-2 px-3 rounded text-xs font-black text-white bg-slate-800 hover:bg-slate-900 transition-colors flex justify-between items-center shadow-sm">
+                  <span>🌎 Global Marathon (All Subjects)</span>
+                  <span>▶</span>
                 </button>
+                {appSubjects.map(subj => (
+                  <button key={`subj-${subj}`} onClick={() => startGame(null, null, subj)}
+                    className="w-full text-left py-2 px-3 rounded text-xs font-black text-fuchsia-900 bg-fuchsia-100 hover:bg-fuchsia-200 border border-fuchsia-200 transition-colors flex justify-between items-center">
+                    <span>🏆 Subject Marathon: {subj}</span>
+                    <span>▶</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            
+            {appSubjects.map(subj => {
+              const subjChapters = appChapters.filter(c => c.subject === subj);
+              if (subjChapters.length === 0) return null;
+              
+              return (
+                <div key={subj} className="mb-4">
+                  <h1 className="text-xl font-black text-slate-800 border-b-2 border-slate-200 pb-1 mb-2 tracking-tight"># {subj}</h1>
+                  
+                  {subjChapters.map(chap => {
+                    const chapSubChaps = appSubChapters.filter(sc => sc.chapterName === chap.name);
+                    const isMarathon = activeGameMode === 'MIXED_MARATHON';
+                    
+                    return (
+                      <div key={chap.id} className="pl-3 mb-3 border-l-2 border-slate-200 ml-1">
+                        <div className="flex justify-between items-center mb-1.5">
+                          <h2 className="text-[15px] font-bold text-slate-700">## {chap.name}</h2>
+                          {isMarathon && (
+                            <button onClick={() => startGame(chap.name)} className="text-[9px] font-bold bg-fuchsia-50 text-fuchsia-600 px-2 py-0.5 rounded border border-fuchsia-200 hover:bg-fuchsia-100 uppercase">
+                              ▶ Chapter Marathon
+                            </button>
+                          )}
+                        </div>
+                        
+                        {!isMarathon && (
+                          <div className="pl-3 space-y-2">
+                            {/* Root Canvases */}
+                            {(() => {
+                              const rootCanvases = canvasConfigs.filter(c => c.chapter === chap.name && !c.subChapterId && c.questions.some(q => q.selectedTileIds.length > 0));
+                              if (!rootCanvases.length) return null;
+                              return (
+                                <ul className="space-y-1">
+                                  {rootCanvases.map(canvas => (
+                                    <li key={canvas.id} className="flex items-center gap-2 text-xs text-slate-600 before:content-['-'] before:text-slate-400">
+                                      <button onClick={() => startGame(chap.name, canvas.id)} className="font-semibold text-clinical-blue hover:text-blue-700 hover:underline text-left">
+                                        {canvas.name}
+                                      </button>
+                                      <span className="text-[9px] text-slate-400 bg-slate-100 px-1.5 rounded">{activeGameMode}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              );
+                            })()}
+
+                            {/* Sub-chapters */}
+                            {chapSubChaps.map(sc => {
+                              const scCanvases = canvasConfigs.filter(c => c.chapter === chap.name && c.subChapterId === sc.id && c.questions.some(q => q.selectedTileIds.length > 0));
+                              if (!scCanvases.length) return null;
+                              
+                              return (
+                                <div key={sc.id} className="mt-2">
+                                  <h3 className="text-sm font-bold text-slate-500 mb-1">### {sc.name}</h3>
+                                  <ul className="space-y-1 pl-3 border-l-2 border-slate-100 ml-1">
+                                    {scCanvases.map(canvas => (
+                                      <li key={canvas.id} className="flex items-center gap-2 text-xs text-slate-600 before:content-['-'] before:text-slate-400">
+                                        <button onClick={() => startGame(chap.name, canvas.id)} className="font-semibold text-clinical-blue hover:text-blue-700 hover:underline text-left">
+                                          {canvas.name}
+                                        </button>
+                                        <span className="text-[9px] text-slate-400 bg-slate-100 px-1.5 rounded">{activeGameMode}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              );
+                            })}
+                            
+                            {canvasConfigs.filter(c => c.chapter === chap.name && c.questions.some(q => q.selectedTileIds.length > 0)).length === 0 && (
+                              <p className="text-[10px] text-slate-400 italic">No playable canvases yet.</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               );
             })}
           </div>
@@ -1643,6 +1710,91 @@ export default function App() {
   const renderAdminHome = () => {
     const allSubjects = Array.from(new Set([...appSubjects, ...appChapters.map(c => c.subject)]));
 
+    const renderItems = (chapName, subChapId = null) => {
+      const tables = criteriaTables.filter(t => t.chapter === chapName && (t.subChapterId || null) === subChapId);
+      const canvases = canvasConfigs.filter(c => c.chapter === chapName && (c.subChapterId || null) === subChapId);
+      const pureCanvases = canvases.filter(c => !c.type || c.type === 'CANVAS');
+      const numConfigs = canvases.filter(c => c.type === 'NUMERICAL');
+      const oddConfigs = canvases.filter(c => c.type === 'ODD_ONE_OUT');
+      const scopeKey = subChapId ? `sub_${subChapId}` : `chap_${chapName}`;
+
+      return (
+        <div className="pl-4 border-l-2 border-slate-100 ml-2 space-y-3 mt-2 mb-4">
+          {/* Tables */}
+          <div className="mb-2">
+            {tables.length > 0 && <p className="text-[9px] font-bold text-slate-400 uppercase mb-1">📋 Tables</p>}
+            <ul className="space-y-1 mb-2">
+              {tables.map(t => (
+                <li key={t.id} className="flex items-center gap-2 group">
+                  <span className="text-slate-300 text-xs">-</span>
+                  <button onClick={() => { setSelectedTableId(t.id); setBuilderCriteria(JSON.parse(JSON.stringify(t.rows))); if (pasteAreaRef.current) pasteAreaRef.current.innerHTML = ''; setScreen('CRITERIA_TABLE_BUILDER'); }}
+                    className="text-xs font-semibold text-slate-700 hover:text-clinical-blue transition-colors text-left truncate max-w-[200px]">
+                    {t.name}
+                  </button>
+                  <button onClick={() => deleteTable(t.id)} className="text-[9px] font-bold text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity px-1">[del]</button>
+                </li>
+              ))}
+            </ul>
+            <div className="flex gap-2">
+              <input type="text" placeholder="+ Add Table" value={newTableChapter === scopeKey ? newTableName : ''}
+                onChange={e => { setNewTableName(e.target.value); setNewTableChapter(scopeKey); }}
+                onClick={() => setNewTableChapter(scopeKey)}
+                className="px-2 py-1 border-b border-slate-200 text-[10px] font-bold bg-transparent focus:outline-none focus:border-clinical-blue w-32 placeholder-slate-300" />
+              <button onClick={() => addCriteriaTable(chapName, subChapId)} className="text-[10px] font-bold text-slate-400 hover:text-clinical-blue">Add</button>
+            </div>
+          </div>
+
+          {/* Canvases */}
+          <div className="mb-2">
+            {canvases.length > 0 && <p className="text-[9px] font-bold text-slate-400 uppercase mb-1 mt-3">🎮 Canvases</p>}
+            <ul className="space-y-1 mb-2">
+              {pureCanvases.map(c => (
+                <li key={c.id} className="flex items-center gap-2 group">
+                  <span className="text-slate-300 text-xs">-</span>
+                  <button onClick={() => { setSelectedCanvasId(c.id); setActiveComposerQuestionId(c.questions[0]?.id); }}
+                    className={`text-xs font-semibold hover:text-teal-600 transition-colors text-left truncate max-w-[200px] ${selectedCanvasId === c.id ? 'text-teal-700 font-black' : 'text-slate-700'}`}>
+                    {c.name}
+                  </button>
+                  <button onClick={() => deleteCanvas(c.id)} className="text-[9px] font-bold text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity px-1">[del]</button>
+                </li>
+              ))}
+              {numConfigs.map(c => (
+                <li key={c.id} className="flex items-center gap-2 group">
+                  <span className="text-slate-300 text-xs">-</span>
+                  <button onClick={() => { setSelectedCanvasId(c.id); setActiveComposerQuestionId(c.questions[0]?.id); }}
+                    className={`text-xs font-semibold hover:text-amber-600 transition-colors text-left truncate max-w-[200px] ${selectedCanvasId === c.id ? 'text-amber-700 font-black' : 'text-slate-700'}`}>
+                    {c.name} (Num)
+                  </button>
+                  <button onClick={() => deleteCanvas(c.id)} className="text-[9px] font-bold text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity px-1">[del]</button>
+                </li>
+              ))}
+              {oddConfigs.map(c => (
+                <li key={c.id} className="flex items-center gap-2 group">
+                  <span className="text-slate-300 text-xs">-</span>
+                  <button onClick={() => { setSelectedCanvasId(c.id); setActiveComposerQuestionId(c.questions[0]?.id); }}
+                    className={`text-xs font-semibold hover:text-rose-600 transition-colors text-left truncate max-w-[200px] ${selectedCanvasId === c.id ? 'text-rose-700 font-black' : 'text-slate-700'}`}>
+                    {c.name} (Odd)
+                  </button>
+                  <button onClick={() => deleteCanvas(c.id)} className="text-[9px] font-bold text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity px-1">[del]</button>
+                </li>
+              ))}
+            </ul>
+            <div className="flex gap-2">
+              <input type="text" placeholder="+ Add Game" value={newCanvasChapter === scopeKey ? newCanvasName : ''}
+                onChange={e => { setNewCanvasName(e.target.value); setNewCanvasChapter(scopeKey); }}
+                onClick={() => setNewCanvasChapter(scopeKey)}
+                className="px-2 py-1 border-b border-slate-200 text-[10px] font-bold bg-transparent focus:outline-none focus:border-teal-400 w-32 placeholder-slate-300" />
+            </div>
+            <div className="flex gap-2 mt-1">
+              <button onClick={() => addCanvas('CANVAS', chapName, subChapId)} className="text-[9px] font-bold text-slate-400 hover:text-teal-600">Jigsaw</button>
+              <button onClick={() => { setNewCanvasName('Numerical Deck'); addCanvas('NUMERICAL', chapName, subChapId); }} className="text-[9px] font-bold text-slate-400 hover:text-amber-600">Numerical</button>
+              <button onClick={() => { setNewCanvasName('Odd One Out Deck'); addCanvas('ODD_ONE_OUT', chapName, subChapId); }} className="text-[9px] font-bold text-slate-400 hover:text-rose-600">Odd One</button>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
     return (
       <div className="h-full flex flex-col bg-slate-50 overflow-hidden">
         <div className="bg-white border-b border-slate-200 px-4 py-3 flex-shrink-0 flex justify-between items-center z-30 shadow-sm relative">
@@ -1663,392 +1815,88 @@ export default function App() {
         </div>
 
         <div className="flex-1 flex overflow-hidden">
-          {/* LEFT PANEL: Universal Index */}
-          <div className={`flex flex-col bg-slate-100 border-r border-slate-200 overflow-y-auto transition-all duration-300 ${selectedCanvasId ? 'w-1/3 min-w-[320px] max-w-[400px]' : 'w-full'}`}>
-            <div className="p-4 space-y-4">
-              <div className="flex justify-between items-center">
-                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Curriculum Index</p>
+          {/* LEFT PANEL: Universal Index - MARKDOWN STYLE */}
+          <div className={`flex flex-col bg-white border-r border-slate-200 overflow-y-auto transition-all duration-300 ${selectedCanvasId ? 'w-1/3 min-w-[320px] max-w-[400px]' : 'w-full'}`}>
+            <div className="p-6 space-y-6">
+              
+              <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Document Index</p>
               </div>
 
-              {/* Add Chapter globally */}
-              <div className="bg-white rounded-xl border border-slate-200 p-3 shadow-sm">
-                <p className="text-[9px] font-black text-clinical-blue uppercase tracking-widest mb-2">Add Chapter</p>
-                <div className="flex flex-col gap-2">
-                  <input type="text" placeholder="Subject (e.g. Medicine)" value={newChapterSubject}
-                    onChange={e => setNewChapterSubject(e.target.value)}
-                    className="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-700 bg-slate-50 focus:outline-none focus:border-clinical-blue" />
-                  <div className="flex gap-2">
-                    <input type="text" placeholder="Chapter name" value={newChapterInput}
-                      onChange={e => setNewChapterInput(e.target.value)}
-                      className="flex-1 px-2 py-1.5 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-700 bg-slate-50 focus:outline-none focus:border-clinical-blue" />
-                    <button onClick={addChapter} className="bg-clinical-blue hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-colors">Add</button>
-                  </div>
-                </div>
+              {/* Add Subject */}
+              <div className="flex items-center gap-2 mb-6 bg-slate-50 p-2 rounded-lg border border-slate-200">
+                <span className="text-xl font-black text-slate-300">#</span>
+                <input type="text" placeholder="Add New Subject" value={newSubjectInput}
+                  onChange={e => setNewSubjectInput(e.target.value)}
+                  className="flex-1 text-xl font-black text-slate-800 placeholder-slate-300 border-none focus:outline-none focus:ring-0 bg-transparent" />
+                <button onClick={() => {
+                  const subject = newSubjectInput.trim();
+                  if (!subject) return;
+                  if (!appSubjects.includes(subject)) setAppSubjects([...appSubjects, subject]);
+                  setNewSubjectInput('');
+                }} className="text-[10px] font-bold text-white bg-slate-800 hover:bg-slate-900 px-3 py-1.5 rounded uppercase">Create</button>
               </div>
 
               {/* Tree View */}
-              {allSubjects.map(sub => {
-                const subChapters = appChapters.filter(c => c.subject === sub);
-                if (subChapters.length === 0) return null;
-                const isSubExpanded = expandedChapters[`sub_${sub}`] !== false; // Default expanded
-
-                return (
-                  <div key={sub} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-                    <button onClick={() => setExpandedChapters(p => ({ ...p, [`sub_${sub}`]: !isSubExpanded }))}
-                      className="w-full px-4 py-3 bg-slate-50 flex justify-between items-center border-b border-slate-200 hover:bg-slate-100 transition-colors">
-                      <p className="text-sm font-black text-slate-800">📚 {sub}</p>
-                      <span className="text-slate-400 font-bold text-[10px]">{isSubExpanded ? '▼' : '►'}</span>
-                    </button>
-
-                    {isSubExpanded && (
-                      <div className="p-3 space-y-3 bg-white">
+              <div className="space-y-8 font-sans">
+                {allSubjects.map(sub => {
+                  const subChapters = appChapters.filter(c => c.subject === sub);
+                  
+                  return (
+                    <div key={sub} className="mb-8">
+                      <h1 className="text-2xl font-black text-slate-900 border-b-2 border-slate-200 pb-2 mb-4 tracking-tight"># {sub}</h1>
+                      
+                      <div className="pl-4">
                         {subChapters.map(chap => {
-                          const chapExpanded = expandedChapters[`chap_${chap.id}`] !== false;
-                          const tables = criteriaTables.filter(t => t.chapter === chap.name && !t.subChapterId);
-                          const pureCanvases = canvasConfigs.filter(c => c.chapter === chap.name && (!c.type || c.type === 'CANVAS'));
-                          const numConfigs = canvasConfigs.filter(c => c.chapter === chap.name && c.type === 'NUMERICAL');
-                          const oddConfigs = canvasConfigs.filter(c => c.chapter === chap.name && c.type === 'ODD_ONE_OUT');
+                          const chapSubChaps = appSubChapters.filter(sc => sc.chapterName === chap.name);
 
                           return (
-                            <div key={chap.id} className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-                              <button onClick={() => setExpandedChapters(p => ({ ...p, [`chap_${chap.id}`]: !chapExpanded }))}
-                                className="w-full px-3 py-2.5 bg-slate-50/80 flex justify-between items-center border-b border-slate-100 hover:bg-slate-100 transition-colors">
-                                <div className="text-left flex-1">
-                                  <p className="text-xs font-extrabold text-slate-700">📖 {chap.name}</p>
+                            <div key={chap.id} className="mb-6 group/chap">
+                              <div className="flex items-center gap-2 mb-2">
+                                <h2 className="text-lg font-extrabold text-slate-700">## {chap.name}</h2>
+                                <button onClick={() => deleteChapter(chap.id, chap.name)} className="text-[9px] font-bold text-rose-400 opacity-0 group-hover/chap:opacity-100 transition-opacity px-1">[del]</button>
+                              </div>
+
+                              {/* Root Chapter Items (Tables & Canvases without Sub-chapter) */}
+                              {renderItems(chap.name, null)}
+
+                              {/* Sub-chapters */}
+                              <div className="pl-4 mt-2">
+                                {chapSubChaps.map(sc => (
+                                  <div key={sc.id} className="mb-4">
+                                    <h3 className="text-[15px] font-bold text-slate-600 mb-1">### {sc.name}</h3>
+                                    {renderItems(chap.name, sc.id)}
+                                  </div>
+                                ))}
+                                
+                                {/* Add Sub-chapter */}
+                                <div className="flex items-center gap-2 mt-3 text-slate-400 border-l-2 border-slate-100 ml-2 pl-4">
+                                  <span className="text-[13px] font-bold">###</span>
+                                  <input type="text" placeholder="Add sub-chapter" value={newSubChapterParent === chap.name ? newSubChapterName : ''}
+                                    onChange={e => { setNewSubChapterName(e.target.value); setNewSubChapterParent(chap.name); }}
+                                    onClick={() => setNewSubChapterParent(chap.name)}
+                                    className="flex-1 text-[13px] font-bold placeholder-slate-300 border-none focus:outline-none bg-transparent" />
+                                  <button onClick={() => addSubChapter(chap.name)} className="text-[9px] font-bold text-slate-500 hover:text-slate-800 uppercase">Add</button>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                  <button onClick={e => { e.stopPropagation(); deleteChapter(chap.id, chap.name); }}
-                                    className="text-[9px] text-rose-400 hover:text-rose-600 font-bold uppercase px-2 py-1">Del</button>
-                                  <span className="text-slate-400 font-bold text-[9px]">{chapExpanded ? '▼' : '►'}</span>
-                                </div>
-                              </button>
-
-                              {chapExpanded && (
-                                <div className="p-2 space-y-4 bg-white pl-3 border-l-2 border-indigo-50 ml-1.5 my-1">
-                                  
-                                  {/* SUB-CHAPTERS */}
-                                  <div className="mb-4 p-2 bg-slate-50 border border-slate-200 rounded-lg">
-                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">📂 Sub-chapters</p>
-                                    <div className="flex flex-col gap-2">
-                                      {appSubChapters.filter(sc => sc.chapterName === chap.name).map(sc => {
-                                        const scExpanded = expandedChapters[`subchap_${sc.id}`];
-                                        return (
-                                          <div key={sc.id} className="border border-slate-200 bg-white rounded-md overflow-hidden">
-                                            <button onClick={() => setExpandedChapters(p => ({ ...p, [`subchap_${sc.id}`]: !scExpanded }))}
-                                              className="w-full px-2 py-1.5 flex justify-between items-center hover:bg-slate-50 text-left">
-                                              <span className="text-[11px] font-bold text-slate-700">📂 {sc.name}</span>
-                                              <span className="text-[9px] font-bold text-slate-400">{scExpanded ? '▼' : '►'}</span>
-                                            </button>
-                                            {scExpanded && (
-                                              <div className="p-2 border-t border-slate-100 bg-slate-50/50">
-                                                                                                <div className="space-y-1.5">
-                                                  <div className="flex justify-between items-center mb-2">
-                                                     <p className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">📋 Tables</p>
-                                                  </div>
-                                                  {criteriaTables.filter(t => t.chapter === chap.name && t.subChapterId === sc.id).length === 0 && <p className="text-[10px] text-slate-400 italic">No tables yet</p>}
-                                                  {criteriaTables.filter(t => t.chapter === chap.name && t.subChapterId === sc.id).map(table => {
-                                                    const isTableExpanded = !!expandedChapters[`table_${table.id}`];
-                                                    return (
-                                                      <div key={table.id} className="border border-indigo-100 rounded-lg bg-white overflow-hidden shadow-sm">
-                                                        <div className="flex justify-between items-center px-2 py-1.5 bg-indigo-50/50 border-b border-indigo-50">
-                                                          <button onClick={() => setExpandedChapters(p => ({ ...p, [`table_${table.id}`]: !isTableExpanded }))} className="flex-1 text-left flex items-center gap-1.5">
-                                                            <span className="text-indigo-400 font-bold text-[8px] w-3">{isTableExpanded ? '▼' : '►'}</span>
-                                                            <p className="text-[11px] font-extrabold text-indigo-900 truncate leading-tight">{table.name}</p>
-                                                          </button>
-                                                          <div className="flex gap-1">
-                                                            <button onClick={() => { setSelectedTableId(table.id); setBuilderCriteria(JSON.parse(JSON.stringify(table.rows))); if (pasteAreaRef.current) pasteAreaRef.current.innerHTML = ''; setScreen('CRITERIA_TABLE_BUILDER'); }}
-                                                              className="text-[9px] font-bold text-indigo-600 hover:text-indigo-800 uppercase px-1.5 py-0.5 border border-indigo-200 rounded bg-white shadow-sm">Edit</button>
-                                                          </div>
-                                                        </div>
-                                                        
-                                                        {isTableExpanded && (
-                                                          <div className="p-1.5 bg-slate-50/50">
-                                                            <div className="overflow-x-auto rounded border border-indigo-100 shadow-sm">
-                                                              {table.rows.length === 0 ? (
-                                                                <div className="p-4 text-center bg-white flex flex-col items-center justify-center gap-2">
-                                                                  <span className="text-xl">📭</span>
-                                                                  <p className="text-[10px] font-bold text-slate-400">This table is empty!</p>
-                                                                  <button onClick={() => { setSelectedTableId(table.id); setBuilderCriteria([]); if (pasteAreaRef.current) pasteAreaRef.current.innerHTML = ""; setScreen("CRITERIA_TABLE_BUILDER"); }}
-                                                                    className="mt-1 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-[9px] font-bold uppercase rounded-md transition-colors">
-                                                                    Click "Edit" to Build Table
-                                                                  </button>
-                                                                </div>
-                                                              ) : (
-                                                              <table className="w-full text-left border-collapse bg-white table-fixed">
-                                                                <tbody>
-                                                                  {table.rows.map(row => {
-                                                                    if (row.isHeading) {
-                                                                      const isSub = row.headingType === 'sub';
-                                                                      return (
-                                                                        <tr key={row.id} className={isSub ? 'bg-amber-50/50' : 'bg-amber-100/80'}>
-                                                                          {row.cells.map((cell, ci) => (
-                                                                            <td key={ci} className={`px-2 py-1.5 border border-indigo-50/50 text-center ${isSub ? 'text-[8px] font-bold text-amber-600' : 'text-[9px] font-black text-amber-800'} uppercase tracking-widest`}>
-                                                                              {cell.text}
-                                                                            </td>
-                                                                          ))}
-                                                                        </tr>
-                                                                      );
-                                                                    }
-                                                                    return (
-                                                                      <tr key={row.id} className="border-b border-indigo-50 last:border-0 hover:bg-slate-50/30">
-                                                                        {(row.cells||[]).map((c, ci) => (
-                                                                          <td key={ci} className="p-2 border border-indigo-50/50 align-top">
-                                                                            {(!c.tiles || c.tiles.length === 0) && (
-                                                                              <div className="font-extrabold text-indigo-900 border-b border-indigo-50/50 pb-1 mb-1.5 leading-tight text-[10px]">{c.text || 'Row'}</div>
-                                                                            )}
-                                                                            <div className="flex flex-col gap-1">
-                                                                              {(c.tiles||[]).map(t => {
-                                                                                const isChecked = selectedCanvasId && activeComposerQuestionId && canvasConfigs.find(cv=>cv.id===selectedCanvasId)?.questions.find(q=>q.id===activeComposerQuestionId)?.selectedTileIds.includes(t.id);
-                                                                                return (
-                                                                                  <div key={t.id} className="flex flex-col gap-0.5">
-                                                                                    <div className={`flex items-start gap-1.5 p-1 rounded transition-colors ${isChecked ? 'bg-teal-50' : 'hover:bg-slate-50'}`}>
-                                                                                      {selectedCanvasId && activeComposerQuestionId && (
-                                                                                        <input type="checkbox" className="w-3 h-3 accent-teal-500 mt-0.5 flex-shrink-0 cursor-pointer"
-                                                                                          checked={isChecked || false}
-                                                                                          onChange={() => toggleTileInCanvas(t.id, selectedCanvasId, activeComposerQuestionId)} />
-                                                                                      )}
-                                                                                      <span className={`text-[9px] leading-tight ${isChecked ? 'font-black text-teal-800' : 'font-semibold text-slate-600'}`}>{t.label}</span>
-                                                                                    </div>
-                                                                                    {t.subtiles?.length > 0 && (
-                                                                                      <div className="flex flex-col gap-0.5 pl-3 border-l-2 border-slate-100 ml-1.5 mt-0.5">
-                                                                                        {t.subtiles.map(sub => {
-                                                                                          const subChecked = selectedCanvasId && activeComposerQuestionId && canvasConfigs.find(cv=>cv.id===selectedCanvasId)?.questions.find(q=>q.id===activeComposerQuestionId)?.selectedTileIds.includes(sub.id);
-                                                                                          return (
-                                                                                            <div key={sub.id} className={`flex items-start gap-1.5 p-1 rounded transition-colors ${subChecked ? 'bg-indigo-50' : 'hover:bg-slate-50'}`}>
-                                                                                              {selectedCanvasId && activeComposerQuestionId && (
-                                                                                                <input type="checkbox" className="w-2.5 h-2.5 accent-indigo-500 mt-0.5 flex-shrink-0 cursor-pointer"
-                                                                                                  checked={subChecked || false}
-                                                                                                  onChange={() => toggleTileInCanvas(sub.id, selectedCanvasId, activeComposerQuestionId)} />
-                                                                                              )}
-                                                                                              <span className={`text-[8px] leading-tight ${subChecked ? 'font-black text-indigo-800' : 'font-semibold text-slate-500'}`}>↳ {sub.label}</span>
-                                                                                            </div>
-                                                                                          );
-                                                                                        })}
-                                                                                      </div>
-                                                                                    )}
-                                                                                  </div>
-                                                                                );
-                                                                              })}
-                                                                            </div>
-                                                                          </td>
-                                                                        ))}
-                                                                      </tr>
-                                                                    );
-                                                                  })}
-                                                                </tbody>
-                                                              </table>
-                                                              )}
-                                                            </div>
-                                                          </div>
-                                                        )}
-                                                      </div>
-                                                    );
-                                                  })}
-                                                  <div className="flex gap-1.5 mt-2">
-                                                    <input type="text" placeholder="+ New table" value={newTableChapter === `sub_${sc.id}` ? newTableName : ''}
-                                                      onChange={e => { setNewTableName(e.target.value); setNewTableChapter(`sub_${sc.id}`); }}
-                                                      onClick={() => setNewTableChapter(`sub_${sc.id}`)}
-                                                      className="flex-1 px-2 py-1.5 border border-dashed border-indigo-300 rounded-lg text-[10px] font-bold bg-indigo-50/30 focus:outline-none focus:border-indigo-500" />
-                                                    <button onClick={() => { addCriteriaTable(chap.name, sc.id); }} className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold transition-colors">+</button>
-                                                  </div>
-                                                </div>
-                                              </div>
-                                            )}
-                                          </div>
-                                        );
-                                      })}
-                                      <div className="flex gap-1.5 mt-1">
-                                        <input type="text" placeholder="+ New sub-chapter" value={newSubChapterParent === chap.name ? newSubChapterName : ''}
-                                          onChange={e => { setNewSubChapterName(e.target.value); setNewSubChapterParent(chap.name); }}
-                                          onClick={() => setNewSubChapterParent(chap.name)}
-                                          className="flex-1 px-2 py-1 border border-slate-200 rounded text-[10px] font-bold bg-white focus:outline-none focus:border-slate-400" />
-                                        <button onClick={() => addSubChapter(chap.name)} className="bg-slate-600 hover:bg-slate-700 text-white px-2 py-1 rounded text-[10px] font-bold transition-colors">+</button>
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  {/* TABLES */}
-                                  <div className="space-y-1.5">
-                                    <div className="flex justify-between items-center mb-2">
-                                       <p className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">📋 Tables</p>
-                                    </div>
-                                    {tables.length === 0 && <p className="text-[10px] text-slate-400 italic">No tables yet</p>}
-                                    {tables.map(table => {
-                                      const isTableExpanded = !!expandedChapters[`table_${table.id}`];
-                                      const nonHeading = table.rows.filter(r => !r.isHeading);
-                                      return (
-                                        <div key={table.id} className="border border-indigo-100 rounded-lg bg-white overflow-hidden shadow-sm">
-                                          <div className="flex justify-between items-center px-2 py-1.5 bg-indigo-50/50 border-b border-indigo-50">
-                                            <button onClick={() => setExpandedChapters(p => ({ ...p, [`table_${table.id}`]: !isTableExpanded }))} className="flex-1 text-left flex items-center gap-1.5">
-                                              <span className="text-indigo-400 font-bold text-[8px] w-3">{isTableExpanded ? '▼' : '►'}</span>
-                                              <p className="text-[11px] font-extrabold text-indigo-900 truncate leading-tight">{table.name}</p>
-                                            </button>
-                                            <div className="flex gap-1">
-                                              <button onClick={() => { setSelectedTableId(table.id); setBuilderCriteria(JSON.parse(JSON.stringify(table.rows))); if (pasteAreaRef.current) pasteAreaRef.current.innerHTML = ''; setScreen('CRITERIA_TABLE_BUILDER'); }}
-                                                className="text-[9px] font-bold text-indigo-600 hover:text-indigo-800 uppercase px-1.5 py-0.5 border border-indigo-200 rounded bg-white shadow-sm">Edit</button>
-                                            </div>
-                                          </div>
-                                          
-                                          {isTableExpanded && (
-                                            <div className="p-1.5 bg-slate-50/50">
-                                              <div className="overflow-x-auto rounded border border-indigo-100 shadow-sm">
-                                                {table.rows.length === 0 ? (
-                                                  <div className="p-4 text-center bg-white flex flex-col items-center justify-center gap-2">
-                                                    <span className="text-xl">📭</span>
-                                                    <p className="text-[10px] font-bold text-slate-400">This table is empty!</p>
-                                                    <button onClick={() => { setSelectedTableId(table.id); setBuilderCriteria([]); if (pasteAreaRef.current) pasteAreaRef.current.innerHTML = ""; setScreen("CRITERIA_TABLE_BUILDER"); }}
-                                                      className="mt-1 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-[9px] font-bold uppercase rounded-md transition-colors">
-                                                      Click "Edit" to Build Table
-                                                    </button>
-                                                  </div>
-                                                ) : (
-                                                <table className="w-full text-left border-collapse bg-white table-fixed">
-                                                  <tbody>
-                                                    {table.rows.map(row => {
-                                                      if (row.isHeading) {
-                                                        const isSub = row.headingType === 'sub';
-                                                        return (
-                                                          <tr key={row.id} className={isSub ? 'bg-amber-50/50' : 'bg-amber-100/80'}>
-                                                            {row.cells.map((cell, ci) => (
-                                                              <td key={ci} className={`px-2 py-1.5 border border-indigo-50/50 text-center ${isSub ? 'text-[8px] font-bold text-amber-600' : 'text-[9px] font-black text-amber-800'} uppercase tracking-widest`}>
-                                                                {cell.text}
-                                                              </td>
-                                                            ))}
-                                                          </tr>
-                                                        );
-                                                      }
-                                                      return (
-                                                        <tr key={row.id} className="border-b border-indigo-50 last:border-0 hover:bg-slate-50/30">
-                                                          {(row.cells||[]).map((c, ci) => (
-                                                            <td key={ci} className="p-2 border border-indigo-50/50 align-top">
-                                                              {(!c.tiles || c.tiles.length === 0) && (
-                                                                <div className="font-extrabold text-indigo-900 border-b border-indigo-50/50 pb-1 mb-1.5 leading-tight text-[10px]">{c.text || 'Row'}</div>
-                                                              )}
-                                                              <div className="flex flex-col gap-1">
-                                                                {(c.tiles||[]).map(t => {
-                                                                  const isChecked = selectedCanvasId && activeComposerQuestionId && canvasConfigs.find(cv=>cv.id===selectedCanvasId)?.questions.find(q=>q.id===activeComposerQuestionId)?.selectedTileIds.includes(t.id);
-                                                                  return (
-                                                                    <div key={t.id} className="flex flex-col gap-0.5">
-                                                                      <div className={`flex items-start gap-1.5 p-1 rounded transition-colors ${isChecked ? 'bg-teal-50' : 'hover:bg-slate-50'}`}>
-                                                                        {selectedCanvasId && activeComposerQuestionId && (
-                                                                          <input type="checkbox" className="w-3 h-3 accent-teal-500 mt-0.5 flex-shrink-0 cursor-pointer"
-                                                                            checked={isChecked || false}
-                                                                            onChange={() => toggleTileInCanvas(t.id, selectedCanvasId, activeComposerQuestionId)} />
-                                                                        )}
-                                                                        <span className={`text-[9px] leading-tight ${isChecked ? 'font-black text-teal-800' : 'font-semibold text-slate-600'}`}>{t.label}</span>
-                                                                      </div>
-                                                                      {t.subtiles?.length > 0 && (
-                                                                        <div className="flex flex-col gap-0.5 pl-3 border-l-2 border-slate-100 ml-1.5 mt-0.5">
-                                                                          {t.subtiles.map(sub => {
-                                                                            const subChecked = selectedCanvasId && activeComposerQuestionId && canvasConfigs.find(cv=>cv.id===selectedCanvasId)?.questions.find(q=>q.id===activeComposerQuestionId)?.selectedTileIds.includes(sub.id);
-                                                                            return (
-                                                                              <div key={sub.id} className={`flex items-start gap-1.5 p-1 rounded transition-colors ${subChecked ? 'bg-indigo-50' : 'hover:bg-slate-50'}`}>
-                                                                                {selectedCanvasId && activeComposerQuestionId && (
-                                                                                  <input type="checkbox" className="w-2.5 h-2.5 accent-indigo-500 mt-0.5 flex-shrink-0 cursor-pointer"
-                                                                                    checked={subChecked || false}
-                                                                                    onChange={() => toggleTileInCanvas(sub.id, selectedCanvasId, activeComposerQuestionId)} />
-                                                                                )}
-                                                                                <span className={`text-[8px] leading-tight ${subChecked ? 'font-black text-indigo-800' : 'font-semibold text-slate-500'}`}>↳ {sub.label}</span>
-                                                                              </div>
-                                                                            );
-                                                                          })}
-                                                                        </div>
-                                                                      )}
-                                                                    </div>
-                                                                  );
-                                                                })}
-                                                              </div>
-                                                            </td>
-                                                          ))}
-                                                        </tr>
-                                                      );
-                                                    })}
-                                                  </tbody>
-                                                </table>
-                                                )}
-                                              </div>
-                                            </div>
-                                          )}
-                                        </div>
-                                      );
-                                    })}
-                                    <div className="flex gap-1.5 mt-2">
-                                      <input type="text" placeholder="+ New table" value={newTableChapter === chap.name ? newTableName : ''}
-                                        onChange={e => { setNewTableName(e.target.value); setNewTableChapter(chap.name); }}
-                                        onClick={() => setNewTableChapter(chap.name)}
-                                        className="flex-1 px-2 py-1.5 border border-dashed border-indigo-300 rounded-lg text-[10px] font-bold bg-indigo-50/30 focus:outline-none focus:border-indigo-500" />
-                                      <button onClick={() => { addCriteriaTable(chap.name); }} className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold transition-colors">+</button>
-                                    </div>
-                                  </div>
-
-                                  {/* CANVASES */}
-                                  <div className="space-y-1.5 pt-3 border-t border-slate-100 mt-2">
-                                    <p className="text-[9px] font-black text-teal-600 uppercase tracking-widest">🎮 Canvases</p>
-                                    {pureCanvases.length === 0 && <p className="text-[10px] text-slate-400 italic">No canvases yet</p>}
-                                    {pureCanvases.map(canvas => (
-                                      <div key={canvas.id} className={`flex justify-between items-center px-3 py-2 border rounded-lg transition-all ${selectedCanvasId === canvas.id ? 'bg-teal-50 border-teal-300 shadow-sm ring-1 ring-teal-200' : 'bg-teal-50/20 border-teal-100 hover:border-teal-300'}`}>
-                                        <button onClick={() => { setSelectedCanvasId(canvas.id); setActiveComposerQuestionId(canvas.questions[0]?.id); }} className="flex-1 text-left flex items-center gap-2">
-                                          <span className="text-teal-500 text-xs font-black">{selectedCanvasId === canvas.id ? '●' : '○'}</span>
-                                          <p className={`text-[11px] font-black ${selectedCanvasId === canvas.id ? 'text-teal-900' : 'text-teal-700'}`}>{canvas.name}</p>
-                                        </button>
-                                        <button onClick={() => deleteCanvas(canvas.id)} className="text-[9px] font-bold text-rose-400 hover:text-rose-600 px-2 py-1">Del</button>
-                                      </div>
-                                    ))}
-                                    <div className="flex gap-1.5 mt-2">
-                                      <input type="text" placeholder="+ New config" value={newCanvasChapter === chap.name ? newCanvasName : ''}
-                                        onChange={e => { setNewCanvasName(e.target.value); setNewCanvasChapter(chap.name); }}
-                                        onClick={() => setNewCanvasChapter(chap.name)}
-                                        className="flex-1 px-2 py-1.5 border border-dashed border-teal-300 rounded-lg text-[10px] font-bold bg-teal-50/30 focus:outline-none focus:border-teal-500" />
-                                      <button onClick={() => { addCanvas('CANVAS', chap.name); }} className="bg-teal-600 hover:bg-teal-700 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold transition-colors">+</button>
-                                    </div>
-                                  </div>
-
-                                  {/* NUMERICAL */}
-                                  <div className="space-y-1.5 pt-3 border-t border-slate-100 mt-2">
-                                    <p className="text-[9px] font-black text-amber-600 uppercase tracking-widest">🔢 Numerical</p>
-                                    {numConfigs.length === 0 && <p className="text-[10px] text-slate-400 italic">No configs yet</p>}
-                                    {numConfigs.map(canvas => (
-                                      <div key={canvas.id} className={`flex justify-between items-center px-3 py-2 border rounded-lg transition-all ${selectedCanvasId === canvas.id ? 'bg-amber-50 border-amber-300 shadow-sm ring-1 ring-amber-200' : 'bg-amber-50/20 border-amber-100 hover:border-amber-300'}`}>
-                                        <button onClick={() => { setSelectedCanvasId(canvas.id); setActiveComposerQuestionId(canvas.questions[0]?.id); }} className="flex-1 text-left flex items-center gap-2">
-                                          <span className="text-amber-500 text-xs font-black">{selectedCanvasId === canvas.id ? '●' : '○'}</span>
-                                          <p className={`text-[11px] font-black ${selectedCanvasId === canvas.id ? 'text-amber-900' : 'text-amber-700'}`}>{canvas.name}</p>
-                                        </button>
-                                        <button onClick={() => deleteCanvas(canvas.id)} className="text-[9px] font-bold text-rose-400 hover:text-rose-600 px-2 py-1">Del</button>
-                                      </div>
-                                    ))}
-                                    <div className="flex gap-1.5 mt-2">
-                                      <button onClick={() => { setNewCanvasName('Numerical Deck'); addCanvas('NUMERICAL', chap.name); }} className="w-full bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold transition-colors">+ Build Numerical Deck</button>
-                                    </div>
-                                  </div>
-
-                                  {/* ODD ONE OUT */}
-                                  <div className="space-y-1.5 pt-3 border-t border-slate-100 mt-2">
-                                    <p className="text-[9px] font-black text-rose-600 uppercase tracking-widest">❌ Odd One</p>
-                                    {oddConfigs.length === 0 && <p className="text-[10px] text-slate-400 italic">No configs yet</p>}
-                                    {oddConfigs.map(canvas => (
-                                      <div key={canvas.id} className={`flex justify-between items-center px-3 py-2 border rounded-lg transition-all ${selectedCanvasId === canvas.id ? 'bg-rose-50 border-rose-300 shadow-sm ring-1 ring-rose-200' : 'bg-rose-50/20 border-rose-100 hover:border-rose-300'}`}>
-                                        <button onClick={() => { setSelectedCanvasId(canvas.id); setActiveComposerQuestionId(canvas.questions[0]?.id); }} className="flex-1 text-left flex items-center gap-2">
-                                          <span className="text-rose-500 text-xs font-black">{selectedCanvasId === canvas.id ? '●' : '○'}</span>
-                                          <p className={`text-[11px] font-black ${selectedCanvasId === canvas.id ? 'text-rose-900' : 'text-rose-700'}`}>{canvas.name}</p>
-                                        </button>
-                                        <button onClick={() => deleteCanvas(canvas.id)} className="text-[9px] font-bold text-rose-400 hover:text-rose-600 px-2 py-1">Del</button>
-                                      </div>
-                                    ))}
-                                    <div className="flex gap-1.5 mt-2">
-                                      <button onClick={() => { setNewCanvasName('Odd One Deck'); addCanvas('ODD_ONE_OUT', chap.name); }} className="w-full bg-rose-500 hover:bg-rose-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold transition-colors">+ Build Odd One Deck</button>
-                                    </div>
-                                  </div>
-
-                                </div>
-                              )}
+                              </div>
                             </div>
                           );
                         })}
+
+                        {/* Add Chapter to Subject */}
+                        <div className="flex items-center gap-2 mt-6 text-slate-400 border-t border-slate-100 pt-3">
+                          <span className="text-[15px] font-extrabold">##</span>
+                          <input type="text" placeholder={`Add chapter to ${sub}`} value={newChapterSubject === sub ? newChapterInput : ''}
+                            onChange={e => { setNewChapterInput(e.target.value); setNewChapterSubject(sub); }}
+                            onClick={() => setNewChapterSubject(sub)}
+                            className="flex-1 text-[15px] font-extrabold placeholder-slate-300 border-none focus:outline-none bg-transparent" />
+                          <button onClick={addChapter} className="text-[9px] font-bold text-white bg-slate-400 hover:bg-slate-600 px-2 py-1 rounded uppercase transition-colors">Add</button>
+                        </div>
                       </div>
-                    )}
-                  </div>
-                );
-              })}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
@@ -2363,7 +2211,7 @@ export default function App() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={() => startGame(canvas.chapter, canvas.id)} className="bg-clinical-blue hover:bg-blue-700 text-white font-extrabold text-[11px] px-4 py-2.5 rounded-lg uppercase shadow-sm transition-all">▶ Preview Run</button>
+              <button onClick={() => startGame(canvas.chapter, canvas.id, null, false, true)} className="bg-clinical-blue hover:bg-blue-700 text-white font-extrabold text-[11px] px-4 py-2.5 rounded-lg uppercase shadow-sm transition-all">▶ Preview Run</button>
               <button onClick={() => setSelectedCanvasId(null)} className="bg-slate-100 hover:bg-slate-200 text-slate-600 font-extrabold text-[11px] px-4 py-2.5 rounded-lg uppercase transition-all">Close</button>
             </div>
           </div>
