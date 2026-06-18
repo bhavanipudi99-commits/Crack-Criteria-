@@ -93,6 +93,7 @@ export default function App() {
   const [marathonLevel, setMarathonLevel] = useState(1);
   const [roundsCompletedInLevel, setRoundsCompletedInLevel] = useState({ canvas: 0, numerical: 0, oddOneOut: 0 });
   const [showLevelUp, setShowLevelUp] = useState(false);
+  const [totalRoundsCompleted, setTotalRoundsCompleted] = useState(0);
 
   // ── Admin selection state ─────────────────────────────────────────────────
   const [selectedTableId, setSelectedTableId] = useState(() => {
@@ -153,6 +154,7 @@ export default function App() {
   const activeCanvasIdxRef = useRef(0);
   const activeQuestionIdxRef = useRef(0);
   const gameCanvasQueueRef = useRef([]);
+  const isTransitioningRef = useRef(false);
   const [isShuffling, setIsShuffling] = useState(false);
   const [score, setScore] = useState({ correct: 0, wrong: 0 });
   const [totalTargetCount, setTotalTargetCount] = useState(0);
@@ -223,6 +225,7 @@ export default function App() {
 
     setScore({ correct: 0, wrong: 0 });
     setTotalTargetCount(0);
+    setTotalRoundsCompleted(0);
     setSessionAuditLog([]);
     setIsPreviewMode(isPreview);
     setActiveChapterTables(chapterTables);
@@ -249,7 +252,7 @@ export default function App() {
       loadCanvasSlide(canvases[0], 0, chapterTables);
     } else if (activeGameMode === 'NUMERICAL') {
       let configs = canvasConfigs.filter(c => c.chapter === chapterName && c.type === 'NUMERICAL');
-      if (previewCanvasId) configs = configs.filter(c => c.id === previewCanvasId);
+      if (targetCanvasId) configs = configs.filter(c => c.id === targetCanvasId);
       
       const allTiles = chapterTables.flatMap(t => (t.rows||[]).flatMap(r => (r.cells||[]).flatMap(c => (c.tiles||[]).flatMap(tile => [tile, ...(tile.subtiles||[])]))));
       const numericalTiles = allTiles.filter(t => parseNumericalData(t.label));
@@ -271,7 +274,7 @@ export default function App() {
       }
     } else if (activeGameMode === 'ODD_ONE_OUT') {
       let configs = canvasConfigs.filter(c => c.chapter === chapterName && c.type === 'ODD_ONE_OUT');
-      if (previewCanvasId) configs = configs.filter(c => c.id === previewCanvasId);
+      if (targetCanvasId) configs = configs.filter(c => c.id === targetCanvasId);
       
       if (configs.length > 0) {
         setGameCanvasQueue(configs);
@@ -297,7 +300,7 @@ export default function App() {
   const loadMarathonSlide = (chapterTablesParam) => {
     const chapterTables = chapterTablesParam || activeChapterTables;
     const modes = ['CANVAS', 'NUMERICAL', 'ODD_ONE_OUT'];
-    const selectedMode = modes[Math.floor(Math.random() * modes)];
+    const selectedMode = modes[Math.floor(Math.random() * modes.length)];
     
     // Set a temporary internal game mode tag for this specific slide so the UI renders correctly
     setActiveTargetObjective(p => ({ ...p, marathonSubMode: selectedMode }));
@@ -421,7 +424,7 @@ export default function App() {
 
     const numTiles = allTiles.filter(t => parseNumericalData(t.label));
     if (numTiles.length < 4) {
-      if (activeGameMode === 'MIXED_MARATHON') return loadCanvasSlide(chapterTablesParam, null, 0);
+      if (activeGameMode === 'MIXED_MARATHON') return loadCanvasSlide(null, 0, chapterTablesParam);
       alert('Not enough numerical tiles in this dataset (Need at least 4).');
       setScreen('PLAYER_HOME');
       return false;
@@ -1133,6 +1136,22 @@ export default function App() {
     }
   };
 
+  const addSubChapter = (chapName) => {
+    const n = newSubChapterName.trim();
+    if (!n) { alert('Enter a sub-chapter name.'); return; }
+    const id = uid('sc');
+    setAppSubChapters(p => [...p, { id, name: n, chapterName: chapName }]);
+    setNewSubChapterName('');
+    setNewSubChapterParent('');
+  };
+
+  const deleteSubChapter = (scId, chapName) => {
+    if (!window.confirm('Delete this sub-chapter and all its tables/canvases?')) return;
+    setAppSubChapters(p => p.filter(sc => sc.id !== scId));
+    setCriteriaTables(p => p.filter(t => t.subChapterId !== scId));
+    setCanvasConfigs(p => p.filter(c => c.subChapterId !== scId));
+  };
+
   const exportDatabase = () => {
     const data = { appSubjects, appChapters, appSubChapters, criteriaTables, canvasConfigs };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -1153,6 +1172,7 @@ export default function App() {
         const data = JSON.parse(event.target.result);
         if (data.appSubjects) setAppSubjects(data.appSubjects);
         if (data.appChapters) setAppChapters(data.appChapters);
+        if (data.appSubChapters) setAppSubChapters(data.appSubChapters);
         if (data.criteriaTables) setCriteriaTables(data.criteriaTables);
         if (data.canvasConfigs) setCanvasConfigs(data.canvasConfigs);
         alert('Database imported successfully!');
@@ -1273,7 +1293,40 @@ export default function App() {
                         const chapSubChaps = appSubChapters.filter(sc => sc.chapterName === chap.name);
                         const isMarathon = activeGameMode === 'MIXED_MARATHON';
                         const isChapExpanded = !!expandedChapters[`player_chap_${chap.id}`];
-                        
+
+                        // Helper: is a canvas playable regardless of its type?
+                        const isPlayable = (c) => {
+                          if (!c.type || c.type === 'CANVAS') return c.questions.some(q => (q.selectedTileIds||[]).length > 0);
+                          if (c.type === 'NUMERICAL') return c.questions.some(q => q.targetTileId);
+                          if (c.type === 'ODD_ONE_OUT') return c.questions.some(q => q.distractorTileId || (q.correctTileIds||[]).length >= 2);
+                          return false;
+                        };
+
+                        // Canvas card renderer for player view
+                        const renderCanvasCard = (canvas, scopeClass = '') => {
+                          const typeLabel = { CANVAS: { icon: '🧩', label: 'Jigsaw', color: 'text-clinical-blue', hover: 'hover:border-clinical-blue', badge: 'bg-blue-50 text-blue-600 border-blue-100' }, NUMERICAL: { icon: '🔢', label: 'Numbers', color: 'text-amber-600', hover: 'hover:border-amber-400', badge: 'bg-amber-50 text-amber-700 border-amber-100' }, ODD_ONE_OUT: { icon: '❌', label: 'Odd One', color: 'text-rose-500', hover: 'hover:border-rose-400', badge: 'bg-rose-50 text-rose-700 border-rose-100' } }[canvas.type || 'CANVAS'];
+                          return (
+                            <button key={canvas.id}
+                              onClick={() => {
+                                const modeMap = { CANVAS: 'CANVAS', NUMERICAL: 'NUMERICAL', ODD_ONE_OUT: 'ODD_ONE_OUT' };
+                                const mode = modeMap[canvas.type] || 'CANVAS';
+                                setActiveGameMode(mode);
+                                // Small timeout so mode state settles before startGame reads it
+                                setTimeout(() => startGame(chap.name, canvas.id), 50);
+                              }}
+                              className={`w-full flex items-center justify-between px-3 py-2.5 bg-white rounded-lg border border-slate-200 ${typeLabel.hover} hover:shadow-md transition-all group ${scopeClass}`}>
+                              <div className="flex items-center gap-2">
+                                <span className={`text-base group-hover:scale-110 transition-transform ${typeLabel.color}`}>{typeLabel.icon}</span>
+                                <div className="text-left">
+                                  <p className="text-xs font-bold text-slate-700 group-hover:text-slate-900 transition-colors leading-tight">{canvas.name}</p>
+                                  <span className={`text-[9px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded border ${typeLabel.badge}`}>{typeLabel.label}</span>
+                                </div>
+                              </div>
+                              <span className={`text-[10px] font-black text-slate-300 group-hover:${typeLabel.color} transition-colors`}>PLAY →</span>
+                            </button>
+                          );
+                        };
+
                         return (
                           <div key={chap.id} className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
                             <button onClick={() => setExpandedChapters(p => ({...p, [`player_chap_${chap.id}`]: !isChapExpanded}))}
@@ -1284,7 +1337,7 @@ export default function App() {
                               </div>
                               <div className="flex items-center gap-3">
                                 {isMarathon && (
-                                  <button onClick={(e) => { e.stopPropagation(); startGame(chap.name); }} 
+                                  <button onClick={(e) => { e.stopPropagation(); startGame(chap.name); }}
                                     className="text-[10px] font-black bg-fuchsia-100 text-fuchsia-700 px-3 py-1.5 rounded-full hover:bg-fuchsia-200 transition-colors shadow-sm">
                                     ▶ PLAY MARATHON
                                   </button>
@@ -1292,65 +1345,53 @@ export default function App() {
                                 {!isMarathon && <span className={`text-slate-300 text-xs transition-transform duration-300 ${isChapExpanded ? 'rotate-90' : ''}`}>▶</span>}
                               </div>
                             </button>
-                            
+
                             {!isMarathon && isChapExpanded && (
-                              <div className="p-2 border-t border-slate-50 bg-slate-50/50">
-                                {/* Root Canvases */}
+                              <div className="p-2 border-t border-slate-50 bg-slate-50/50 space-y-1">
+                                {/* Root-level canvases (Canvas → Numerical → OddOneOut order) */}
                                 {(() => {
-                                  const rootCanvases = canvasConfigs.filter(c => c.chapter === chap.name && !c.subChapterId && c.questions.some(q => q.selectedTileIds.length > 0));
-                                  if (!rootCanvases.length) return null;
-                                  return (
-                                    <div className="space-y-1 mb-2">
-                                      {rootCanvases.map(canvas => (
-                                        <button key={canvas.id} onClick={() => startGame(chap.name, canvas.id)} 
-                                          className="w-full flex items-center justify-between px-3 py-2 bg-white rounded-lg border border-slate-200 hover:border-clinical-blue hover:shadow-md transition-all group">
-                                          <div className="flex items-center gap-2">
-                                            <span className="text-clinical-blue group-hover:scale-110 transition-transform">🧩</span>
-                                            <span className="text-xs font-bold text-slate-700 group-hover:text-clinical-blue transition-colors">{canvas.name}</span>
-                                          </div>
-                                          <span className="text-[10px] font-black text-slate-300 group-hover:text-clinical-blue transition-colors">PLAY →</span>
-                                        </button>
-                                      ))}
-                                    </div>
-                                  );
+                                  const rootCanvases = canvasConfigs.filter(c => c.chapter === chap.name && !c.subChapterId && isPlayable(c));
+                                  const canvasItems = rootCanvases.filter(c => !c.type || c.type === 'CANVAS');
+                                  const numItems = rootCanvases.filter(c => c.type === 'NUMERICAL');
+                                  const oddItems = rootCanvases.filter(c => c.type === 'ODD_ONE_OUT');
+                                  const allItems = [...canvasItems, ...numItems, ...oddItems];
+                                  if (!allItems.length) return null;
+                                  return <div className="space-y-1 mb-1">{allItems.map(c => renderCanvasCard(c))}</div>;
                                 })()}
 
                                 {/* Sub-chapters */}
                                 {chapSubChaps.map(sc => {
-                                  const scCanvases = canvasConfigs.filter(c => c.chapter === chap.name && c.subChapterId === sc.id && c.questions.some(q => q.selectedTileIds.length > 0));
-                                  if (!scCanvases.length) return null;
+                                  const scAllCanvases = canvasConfigs.filter(c => c.chapter === chap.name && c.subChapterId === sc.id && isPlayable(c));
+                                  const scCanvas = scAllCanvases.filter(c => !c.type || c.type === 'CANVAS');
+                                  const scNum = scAllCanvases.filter(c => c.type === 'NUMERICAL');
+                                  const scOdd = scAllCanvases.filter(c => c.type === 'ODD_ONE_OUT');
+                                  const scItems = [...scCanvas, ...scNum, ...scOdd];
+                                  if (!scItems.length) return null;
                                   const isScExpanded = !!expandedChapters[`player_sc_${sc.id}`];
-                                  
+
                                   return (
-                                    <div key={sc.id} className="mb-2 bg-white rounded-lg border border-slate-100 overflow-hidden">
+                                    <div key={sc.id} className="mb-1 bg-white rounded-lg border border-slate-100 overflow-hidden">
                                       <button onClick={() => setExpandedChapters(p => ({...p, [`player_sc_${sc.id}`]: !isScExpanded}))}
                                         className="w-full px-3 py-2 flex items-center justify-between bg-slate-50/80 hover:bg-slate-100 transition-colors">
                                         <div className="flex items-center gap-2">
                                           <span className="text-slate-400 text-xs">📂</span>
                                           <span className="text-xs font-bold text-slate-600">{sc.name}</span>
+                                          <span className="text-[9px] font-black text-slate-300 bg-slate-100 px-1.5 py-0.5 rounded-full">{scItems.length}</span>
                                         </div>
                                         <span className={`text-slate-300 text-[10px] transition-transform duration-300 ${isScExpanded ? 'rotate-90' : ''}`}>▶</span>
                                       </button>
-                                      
+
                                       {isScExpanded && (
                                         <div className="p-2 space-y-1 bg-white border-t border-slate-50">
-                                          {scCanvases.map(canvas => (
-                                            <button key={canvas.id} onClick={() => startGame(chap.name, canvas.id)} 
-                                              className="w-full flex items-center justify-between px-3 py-2 bg-slate-50 rounded-lg border border-slate-100 hover:border-clinical-blue hover:bg-white hover:shadow-sm transition-all group">
-                                              <div className="flex items-center gap-2">
-                                                <span className="text-clinical-blue group-hover:scale-110 transition-transform">🧩</span>
-                                                <span className="text-xs font-bold text-slate-700 group-hover:text-clinical-blue transition-colors">{canvas.name}</span>
-                                              </div>
-                                              <span className="text-[10px] font-black text-slate-300 group-hover:text-clinical-blue transition-colors">PLAY →</span>
-                                            </button>
-                                          ))}
+                                          {scItems.map(c => renderCanvasCard(c, 'ml-2'))}
                                         </div>
                                       )}
                                     </div>
                                   );
                                 })}
-                                
-                                {canvasConfigs.filter(c => c.chapter === chap.name && c.questions.some(q => q.selectedTileIds.length > 0)).length === 0 && (
+
+                                {/* Empty state */}
+                                {canvasConfigs.filter(c => c.chapter === chap.name && isPlayable(c)).length === 0 && (
                                   <div className="p-4 text-center">
                                     <span className="text-2xl mb-2 block">📭</span>
                                     <p className="text-[10px] font-bold text-slate-400">No playable games yet.</p>
@@ -1378,6 +1419,7 @@ export default function App() {
   // ════════════════════════════════════════════════════════════════════════════
   // RENDER: GAME
   // ════════════════════════════════════════════════════════════════════════════
+
 
   const renderGame = () => {
     if (!activeTargetObjective) return null;
@@ -1861,105 +1903,123 @@ export default function App() {
         </div>
 
         <div className="flex-1 flex overflow-hidden">
-          {/* LEFT PANEL: Universal Index - SMOOTH ACCORDIONS */}
-          <div className={`flex flex-col bg-slate-100 border-r border-slate-200 overflow-y-auto transition-all duration-300 ${selectedCanvasId ? 'w-1/3 min-w-[320px] max-w-[400px]' : 'w-full'}`}>
-            <div className="p-4 space-y-4">
-              
-              <div className="flex justify-between items-center">
-                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Curriculum Index</p>
+          {/* LEFT PANEL: Curriculum Index */}
+          <div className={`flex flex-col bg-white border-r border-slate-200 overflow-y-auto transition-all duration-300 ${selectedCanvasId ? 'w-[340px] flex-shrink-0' : 'w-full'}`}>
+            <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">📑 Curriculum Index</p>
+              <div className="flex gap-2">
+                <button onClick={exportDatabase} className="text-[9px] font-black text-indigo-600 border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded uppercase transition-colors">Export</button>
+                <label className="text-[9px] font-black text-slate-600 border border-slate-200 bg-white hover:bg-slate-50 px-2 py-1 rounded uppercase transition-colors cursor-pointer">
+                  Import<input type="file" accept=".json" onChange={importDatabase} className="hidden" />
+                </label>
               </div>
+            </div>
+            <div className="p-3 space-y-3">
 
               {/* Add Subject */}
-              <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
-                <p className="text-[9px] font-black text-clinical-blue uppercase tracking-widest mb-2">Create New Subject</p>
-                <div className="flex gap-2">
-                  <input type="text" placeholder="e.g. Medicine" value={newSubjectInput}
-                    onChange={e => setNewSubjectInput(e.target.value)}
-                    className="flex-1 px-3 py-2 text-xs font-bold text-slate-800 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-clinical-blue" />
-                  <button onClick={() => {
-                    const subject = newSubjectInput.trim();
-                    if (!subject) return;
-                    if (!appSubjects.includes(subject)) setAppSubjects([...appSubjects, subject]);
-                    setNewSubjectInput('');
-                  }} className="text-[10px] font-black text-white bg-clinical-blue hover:bg-blue-700 px-4 py-2 rounded-lg uppercase shadow-sm transition-all">Add</button>
-                </div>
+              <div className="flex gap-2 items-center bg-slate-50 border border-slate-200 rounded-xl p-2">
+                <span className="text-slate-400 text-base">📚</span>
+                <input type="text" placeholder="New Subject name..." value={newSubjectInput}
+                  onChange={e => setNewSubjectInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && (() => { const s = newSubjectInput.trim(); if (s && !appSubjects.includes(s)) { setAppSubjects(p => [...p, s]); setNewSubjectInput(''); } })()}
+                  className="flex-1 px-2 py-1 text-xs font-bold text-slate-800 bg-transparent focus:outline-none placeholder-slate-400" />
+                <button onClick={() => {
+                  const subject = newSubjectInput.trim();
+                  if (!subject) return;
+                  if (!appSubjects.includes(subject)) setAppSubjects([...appSubjects, subject]);
+                  setNewSubjectInput('');
+                }} className="text-[9px] font-black text-white bg-indigo-500 hover:bg-indigo-600 px-3 py-1.5 rounded-lg uppercase shadow-sm transition-all">Add</button>
               </div>
 
               {/* Tree View */}
-              <div className="space-y-4">
+              <div className="space-y-2">
                 {allSubjects.map(sub => {
                   const subChapters = appChapters.filter(c => c.subject === sub);
-                  const isSubExpanded = expandedChapters[`sub_${sub}`] !== false; // Default expanded
-                  
+                  const isSubExpanded = expandedChapters[`sub_${sub}`] !== false;
+                  const subTableCount = criteriaTables.filter(t => subChapters.some(c => c.name === t.chapter)).length;
+                  const subCanvasCount = canvasConfigs.filter(cv => subChapters.some(c => c.name === cv.chapter)).length;
+
                   return (
-                    <div key={sub} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden transition-all duration-300">
+                    <div key={sub} className="rounded-xl border border-indigo-100 overflow-hidden shadow-sm">
                       <button onClick={() => setExpandedChapters(p => ({ ...p, [`sub_${sub}`]: !isSubExpanded }))}
-                        className="w-full px-4 py-3 bg-slate-50 hover:bg-slate-100 flex justify-between items-center border-b border-slate-200 transition-colors">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-lg">📚</div>
-                          <h1 className="text-base font-black text-slate-900">{sub}</h1>
+                        className="w-full px-3 py-2.5 bg-indigo-600 hover:bg-indigo-700 flex justify-between items-center transition-colors">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">📚</span>
+                          <h1 className="text-sm font-black text-white tracking-tight">{sub}</h1>
                         </div>
-                        <span className={`text-slate-400 font-bold transition-transform duration-300 ${isSubExpanded ? 'rotate-90' : ''}`}>▶</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[9px] font-bold text-indigo-200 bg-indigo-800/40 px-2 py-0.5 rounded-full">{subChapters.length} ch · {subTableCount}t · {subCanvasCount}g</span>
+                          <span className={`text-indigo-200 text-xs transition-transform duration-300 ${isSubExpanded ? 'rotate-90' : ''}`}>▶</span>
+                        </div>
                       </button>
                       
                       {isSubExpanded && (
-                        <div className="p-3 bg-slate-50/50">
+                        <div className="p-2 bg-slate-50/50 space-y-1">
                           {subChapters.map(chap => {
                             const chapSubChaps = appSubChapters.filter(sc => sc.chapterName === chap.name);
-                            const isChapExpanded = expandedChapters[`chap_${chap.id}`] !== false; // Default expanded
-
+                            const isChapExpanded = expandedChapters[`chap_${chap.id}`] !== false;
+                            const chapTableCount = criteriaTables.filter(t => t.chapter === chap.name).length;
+                            const chapCanvasCount = canvasConfigs.filter(cv => cv.chapter === chap.name).length;
                             return (
-                              <div key={chap.id} className="mb-3 bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                              <div key={chap.id} className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
                                 <button onClick={() => setExpandedChapters(p => ({ ...p, [`chap_${chap.id}`]: !isChapExpanded }))}
-                                  className="w-full px-4 py-3 flex justify-between items-center hover:bg-slate-50 border-b border-slate-100 transition-colors">
-                                  <div className="flex items-center gap-2.5">
+                                  className="w-full px-3 py-2 flex justify-between items-center hover:bg-slate-50 transition-colors">
+                                  <div className="flex items-center gap-2">
                                     <span className="text-slate-400 text-sm">📖</span>
-                                    <h2 className="text-sm font-bold text-slate-800">{chap.name}</h2>
+                                    <h2 className="text-xs font-bold text-slate-800">{chap.name}</h2>
                                   </div>
-                                  <div className="flex items-center gap-3">
-                                    <span onClick={(e) => { e.stopPropagation(); deleteChapter(chap.id, chap.name); }} className="text-[9px] font-bold text-rose-400 hover:text-rose-600 uppercase px-2 py-1 bg-rose-50 hover:bg-rose-100 rounded transition-colors">Del</span>
-                                    <span className={`text-slate-400 font-bold transition-transform duration-300 ${isChapExpanded ? 'rotate-90' : ''}`}>▶</span>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-full">{chapTableCount}t · {chapCanvasCount}g</span>
+                                    <span onClick={(e) => { e.stopPropagation(); deleteChapter(chap.id, chap.name); }} className="text-[9px] font-bold text-rose-400 hover:text-rose-600 uppercase px-1.5 py-0.5 bg-rose-50 hover:bg-rose-100 rounded transition-colors">Del</span>
+                                    <span className={`text-slate-400 font-bold text-[10px] transition-transform duration-300 ${isChapExpanded ? 'rotate-90' : ''}`}>▶</span>
                                   </div>
                                 </button>
 
                                 {isChapExpanded && (
-                                  <div className="p-3 bg-slate-50/50">
+                                  <div className="bg-slate-50/30">
                                     {/* Root Chapter Items */}
-                                    {renderItems(chap.name, null)}
+                                    <div className="p-2">{renderItems(chap.name, null)}</div>
 
                                     {/* Sub-chapters */}
-                                    <div className="mt-4 space-y-3">
-                                      {chapSubChaps.map(sc => {
-                                        const isScExpanded = expandedChapters[`subchap_${sc.id}`]; // Default collapsed
-                                        return (
-                                          <div key={sc.id} className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
-                                            <button onClick={() => setExpandedChapters(p => ({ ...p, [`subchap_${sc.id}`]: !isScExpanded }))}
-                                              className="w-full px-3 py-2.5 flex items-center justify-between hover:bg-slate-50 transition-colors border-b border-slate-100">
-                                              <div className="flex items-center gap-2">
-                                                <span className="text-slate-400 text-sm">📂</span>
-                                                <span className="text-xs font-bold text-slate-700">{sc.name}</span>
-                                              </div>
-                                              <span className={`text-slate-400 font-bold text-[10px] transition-transform duration-300 ${isScExpanded ? 'rotate-90' : ''}`}>▶</span>
-                                            </button>
-                                            
-                                            {isScExpanded && (
-                                              <div className="p-2 bg-slate-50/50">
-                                                {renderItems(chap.name, sc.id)}
-                                              </div>
-                                            )}
-                                          </div>
-                                        );
-                                      })}
-                                    </div>
+                                    {chapSubChaps.length > 0 && (
+                                      <div className="px-2 pb-2 space-y-1">
+                                        {chapSubChaps.map(sc => {
+                                          const isScExpanded = expandedChapters[`subchap_${sc.id}`];
+                                          const scTableCount = criteriaTables.filter(t => t.subChapterId === sc.id).length;
+                                          const scCanvasCount = canvasConfigs.filter(cv => cv.subChapterId === sc.id).length;
+                                          return (
+                                            <div key={sc.id} className="bg-white border border-slate-200 rounded-lg overflow-hidden">
+                                              <button onClick={() => setExpandedChapters(p => ({ ...p, [`subchap_${sc.id}`]: !isScExpanded }))}
+                                                className="w-full px-3 py-2 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                                                <div className="flex items-center gap-1.5">
+                                                  <span className="text-slate-300 text-xs border-l-2 border-slate-200 pl-1.5">📂</span>
+                                                  <span className="text-xs font-bold text-slate-600">{sc.name}</span>
+                                                  <span className="text-[9px] font-bold text-slate-300 bg-slate-100 px-1.5 py-0.5 rounded-full">{scTableCount}t · {scCanvasCount}g</span>
+                                                </div>
+                                                <div className="flex items-center gap-1.5">
+                                                  <span onClick={(e) => { e.stopPropagation(); deleteSubChapter(sc.id, chap.name); }} className="text-[9px] font-bold text-rose-400 hover:text-rose-600 uppercase px-1.5 py-0.5 bg-rose-50 hover:bg-rose-100 rounded transition-colors">Del</span>
+                                                  <span className={`text-slate-400 font-bold text-[10px] transition-transform duration-300 ${isScExpanded ? 'rotate-90' : ''}`}>▶</span>
+                                                </div>
+                                              </button>
+                                              {isScExpanded && (
+                                                <div className="p-2 bg-slate-50/30 border-t border-slate-100">
+                                                  {renderItems(chap.name, sc.id)}
+                                                </div>
+                                              )}
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
                                     
                                     {/* Add Sub-chapter */}
-                                    <div className="mt-3 flex gap-2 items-center bg-white p-2 rounded-lg border border-slate-200 shadow-sm">
-                                      <span className="text-slate-400 text-sm">📂</span>
-                                      <input type="text" placeholder="New Sub-chapter..." value={newSubChapterParent === chap.name ? newSubChapterName : ''}
+                                    <div className="mx-2 mb-2 flex gap-2 items-center bg-white p-1.5 rounded-lg border border-slate-200">
+                                      <span className="text-slate-300 text-xs border-l-2 border-slate-200 pl-1.5">📂</span>
+                                      <input type="text" placeholder="+ New Sub-chapter..." value={newSubChapterParent === chap.name ? newSubChapterName : ''}
                                         onChange={e => { setNewSubChapterName(e.target.value); setNewSubChapterParent(chap.name); }}
                                         onClick={() => setNewSubChapterParent(chap.name)}
                                         className="flex-1 text-xs font-bold placeholder-slate-400 border-none focus:outline-none focus:ring-0 bg-transparent" />
-                                      <button onClick={() => addSubChapter(chap.name)} className="text-[9px] font-black text-white bg-slate-700 hover:bg-slate-800 px-3 py-1.5 rounded uppercase transition-colors shadow-sm">Add</button>
+                                      <button onClick={() => addSubChapter(chap.name)} className="text-[9px] font-black text-white bg-slate-600 hover:bg-slate-700 px-2.5 py-1 rounded uppercase transition-colors">Add</button>
                                     </div>
                                   </div>
                                 )}
@@ -1968,13 +2028,13 @@ export default function App() {
                           })}
 
                           {/* Add Chapter to Subject */}
-                          <div className="mt-4 flex gap-2 items-center bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm">
+                          <div className="flex gap-2 items-center bg-slate-50 border border-slate-200 rounded-lg p-1.5 mt-1">
                             <span className="text-slate-400 text-sm">📖</span>
-                            <input type="text" placeholder={`Add Chapter to ${sub}...`} value={newChapterSubject === sub ? newChapterInput : ''}
+                            <input type="text" placeholder={`+ Chapter in ${sub}...`} value={newChapterSubject === sub ? newChapterInput : ''}
                               onChange={e => { setNewChapterInput(e.target.value); setNewChapterSubject(sub); }}
                               onClick={() => setNewChapterSubject(sub)}
                               className="flex-1 text-xs font-bold placeholder-slate-400 border-none focus:outline-none focus:ring-0 bg-transparent" />
-                            <button onClick={addChapter} className="text-[9px] font-black text-white bg-indigo-500 hover:bg-indigo-600 px-3 py-2 rounded uppercase transition-colors shadow-sm">Add</button>
+                            <button onClick={addChapter} className="text-[9px] font-black text-white bg-indigo-500 hover:bg-indigo-600 px-2.5 py-1 rounded uppercase transition-colors">Add</button>
                           </div>
                         </div>
                       )}
@@ -2271,7 +2331,8 @@ export default function App() {
     // Derived states
     const max = activeQ.maxTargets || 6;
     const selectedIds = activeQ.selectedTileIds || [];
-    const allTableTiles = (criteriaTables||[]).filter(t => t.chapter === canvas.chapter).flatMap(t => (t.rows||[]).filter(r=>!r.isHeading).flatMap(r => (r.cells||[]).flatMap(c => (c.tiles||[]).flatMap(tile => [tile, ...(tile.subtiles || [])]))));
+    const allTableTiles = (criteriaTables||[]).filter(t => t.chapter === canvas.chapter).flatMap(t => (t.rows||[]).filter(r=>!r.isHeading).flatMap(r => (r.cells||[]).flatMap(c => (c.tiles||[]).flatMap(
+      tile => [tile, ...(tile.subtiles || [])]))));
     
     // We order the selected tiles to match their order in the table
     const orderedSelectedTiles = allTableTiles.filter(t => selectedIds.includes(t.id));
@@ -2301,10 +2362,10 @@ export default function App() {
               <button key={q.id} onClick={() => setActiveComposerQuestionId(q.id)}
                 className={`relative w-8 h-8 rounded-lg flex justify-center items-center font-bold text-xs transition-all ${activeQ.id === q.id ? 'bg-clinical-blue text-white shadow-md' : 'bg-white text-slate-500 hover:bg-slate-200 border border-slate-200'}`}>
                 {i + 1}
-                {(q.selectedTileIds?.length || 0) > 0 && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white"></span>}
+                {((q.selectedTileIds?.length || 0) > 0 || q.targetTileId || (q.correctTileIds?.length || 0) > 0) && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white"></span>}
               </button>
             ))}
-            <button onClick={() => setCanvasConfigs(p => p.map(c => c.id !== canvas.id ? c : { ...c, questions: [...c.questions, { id: uid('q'), selectedTileIds: [], maxTargets: 6 }] }))}
+            <button onClick={() => addQuestionToCanvas(canvas.id)}
               className="w-8 h-8 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-600 font-bold text-xs flex justify-center items-center ml-1 border border-slate-300 transition-colors">+</button>
             <div className="w-px h-6 bg-slate-300 mx-1"></div>
             <button onClick={() => {
@@ -2314,17 +2375,35 @@ export default function App() {
             }} className="w-8 h-8 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-600 font-bold text-xs flex justify-center items-center border border-rose-200 transition-colors" title="Delete current question">Del</button>
           </div>
 
-          <div className="flex items-center gap-4">
-             <div className="flex items-center gap-2">
-               <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Slots</span>
-               <select value={max} onChange={e => setCanvasConfigs(p => p.map(c => c.id !== canvas.id ? c : { ...c, questions: c.questions.map(q => q.id === activeQ.id ? { ...q, maxTargets: Number(e.target.value) } : q) }))}
-                 className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold text-slate-700 focus:outline-none focus:border-clinical-blue shadow-sm">
-                 <option value="6">6 slots</option><option value="8">8 slots</option><option value="10">10 slots</option>
-                 <option value="12">12 slots</option><option value="16">16 slots</option><option value="20">20 slots</option><option value="24">24 slots</option>
-               </select>
-             </div>
+          <div className="flex items-center gap-2">
+            {(type === 'NUMERICAL' || type === 'ODD_ONE_OUT') && (
+              <button onClick={() => autoGenerateArcadeConfig(canvas.id)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-black text-[10px] uppercase rounded-lg shadow-sm transition-all">
+                🎲 Auto-Generate
+              </button>
+            )}
+            <button onClick={() => {
+              setIsPreviewMode(true);
+              const modeMap = { CANVAS: 'CANVAS', NUMERICAL: 'NUMERICAL', ODD_ONE_OUT: 'ODD_ONE_OUT' };
+              setActiveGameMode(modeMap[type] || 'CANVAS');
+              setTimeout(() => startGame(canvas.chapter, canvas.id, null, false, true), 50);
+            }} className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-500 hover:bg-teal-600 text-white font-black text-[10px] uppercase rounded-lg shadow-sm transition-all">
+              ▶ Preview
+            </button>
           </div>
         </div>
+        {/* Slots selector — only for CANVAS type */}
+        {type === 'CANVAS' && (
+          <div className="bg-white border-b border-slate-100 px-4 py-2 flex items-center gap-3 flex-shrink-0">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Board Slots</span>
+            <select value={max} onChange={e => setCanvasConfigs(p => p.map(c => c.id !== canvas.id ? c : { ...c, questions: c.questions.map(q => q.id === activeQ.id ? { ...q, maxTargets: Number(e.target.value) } : q) }))}
+              className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold text-slate-700 focus:outline-none focus:border-clinical-blue shadow-sm">
+              <option value="6">6 slots</option><option value="8">8 slots</option><option value="10">10 slots</option>
+              <option value="12">12 slots</option><option value="16">16 slots</option><option value="20">20 slots</option><option value="24">24 slots</option>
+            </select>
+          </div>
+        )}
+
 
         {/* Fixed Active Question Config */}
         <div className="bg-white border-b border-slate-200 px-6 py-4 flex-shrink-0 z-10 shadow-sm relative space-y-3">
