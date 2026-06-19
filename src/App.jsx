@@ -1486,8 +1486,8 @@ export default function App() {
           </div>
         </div>
       </div>
-      <button onClick={() => setScreen('GATE')} className="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 font-extrabold py-3.5 rounded-xl text-xs uppercase tracking-wider">
-        Sign Out
+      <button onClick={() => adminPassword === 'admin123' ? setScreen('ADMIN_HOME') : setScreen('GATE')} className="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 font-extrabold py-3.5 rounded-xl text-xs uppercase tracking-wider">
+        {adminPassword === 'admin123' ? 'Back to Admin Dashboard' : 'Sign Out'}
       </button>
     </div>
   );
@@ -1995,8 +1995,10 @@ export default function App() {
               {isCloudLoaded && !isSyncing && <span className="text-[10px] font-bold text-teal-600">Cloud Synced ☁️✓</span>}
             </div>
 
+            <button onClick={() => { setSelectedCanvasId(null); setScreen('PLAYER_HOME'); }}
+              className="text-[10px] font-bold text-teal-600 hover:text-teal-700 uppercase tracking-wide ml-2 mr-2">▶ Play Game</button>
             <button onClick={() => { setAdminPassword(''); setSelectedCanvasId(null); setScreen('GATE'); }}
-              className="text-[10px] font-bold text-slate-400 hover:text-slate-700 uppercase tracking-wide ml-2">Sign Out</button>
+              className="text-[10px] font-bold text-slate-400 hover:text-slate-700 uppercase tracking-wide ml-2 border-l border-slate-300 pl-3">Sign Out</button>
           </div>
         </div>
 
@@ -2603,12 +2605,12 @@ export default function App() {
                   const tile = selectedTileObjects[i];
                   return (
                     <div key={i} onClick={() => tile && toggleTileInCanvas(tile.id, canvas.id, activeQ.id)}
-                      className={`min-h-[3.5rem] p-2 rounded-xl border-2 flex flex-col items-start justify-between cursor-pointer transition-all ${tile ? 'bg-blue-600 border-blue-500 text-white shadow-md hover:bg-rose-600 hover:border-rose-500 hover:scale-[1.02]' : 'bg-slate-800/50 border-slate-700 border-dashed text-slate-500 hover:bg-slate-800 hover:border-slate-600'}`}>
+                      className={`min-h-[3.5rem] p-2 rounded-xl border-2 flex flex-col items-start justify-between cursor-pointer transition-all overflow-hidden ${tile ? 'bg-blue-600 border-blue-500 text-white shadow-md hover:bg-rose-600 hover:border-rose-500 hover:scale-[1.02]' : 'bg-slate-800/50 border-slate-700 border-dashed text-slate-500 hover:bg-slate-800 hover:border-slate-600'}`}>
                       {tile ? (
-                        <>
-                          <p className="text-[10px] font-bold leading-tight">{tile.label}</p>
-                          {tile.tileCount === 2 && <span className="text-[8px] text-blue-200 bg-blue-800/50 px-1 py-0.5 rounded font-black uppercase mt-1">½ pair</span>}
-                        </>
+                        <div className="w-full flex flex-col h-full justify-between">
+                          <p className="text-[10px] font-bold leading-tight break-words whitespace-normal line-clamp-3">{tile.label}</p>
+                          {tile.tileCount === 2 && <span className="text-[8px] text-blue-200 bg-blue-800/50 px-1 py-0.5 rounded font-black uppercase mt-1 self-start shrink-0">½ pair</span>}
+                        </div>
                       ) : <div className="w-full h-full flex items-center justify-center"><span className="text-[9px] font-black uppercase tracking-widest opacity-30 text-center">Empty</span></div>}
                     </div>
                   );
