@@ -3,7 +3,7 @@ import { playSound } from '../utils/audio.js';
 import { parseNumericalData } from '../utils/gameLogic.js';
 
 export function useGameEngine({
-  appChapters, criteriaTables, activeGameMode, difficulty, setScreen
+  appChapters, criteriaTables, canvasConfigs, activeGameMode, difficulty, setScreen
 }) {
   // ── Game state ─────────────────────────────────────────────────────────────
   const [boardTiles, setBoardTiles] = useState([]);

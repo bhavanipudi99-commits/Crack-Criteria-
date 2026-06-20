@@ -134,7 +134,7 @@ export default function App() {
 
 
   const engine = useGameEngine({
-    appChapters, criteriaTables, activeGameMode, difficulty, setScreen
+    appChapters, criteriaTables, canvasConfigs, activeGameMode, difficulty, setScreen
   });
   // --- Global Error Catcher ---
   const [globalError, setGlobalError] = useState(null);
