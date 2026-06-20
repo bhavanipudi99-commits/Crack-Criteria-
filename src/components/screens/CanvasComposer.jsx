@@ -553,11 +553,11 @@ export default function CanvasComposer({
           lastHeadingText = (r.cells || []).map(c => c.text).filter(Boolean).join(' / ');
           return;
         }
-        (r.cells || []).forEach(c => {
+        (r.cells || []).forEach((c, cellIdx) => {
           (c.tiles || []).forEach(tile => {
-            const base = { tileId: tile.id, label: tile.label, criterionFullText: c.text || '', criterionCategory: t.name || '', headingText: lastHeadingText, tableName: t.name || '' };
+            const base = { tileId: tile.id, label: tile.label, criterionFullText: c.text || '', criterionCategory: t.name || '', headingText: lastHeadingText, tableName: t.name || '', cellId: `${r.id}_${cellIdx}`, parentId: null };
             allTiles.push(base);
-            (tile.subtiles || []).forEach(s => allTiles.push({ ...base, tileId: s.id, label: s.label }));
+            (tile.subtiles || []).forEach(s => allTiles.push({ ...base, tileId: s.id, label: s.label, parentId: tile.id }));
           });
         });
       });
