@@ -131,11 +131,11 @@ export default function GameScreen(props) {
                 const displayText = isNum ? (numData?.number || tile.criterion.label) : tile.criterion.label;
                 const suffixText = !isNum ? null : null; // Units are now strictly in the question stem for numericals
 
-                const idleStyleNum = "bg-gradient-to-br from-white to-sky-50 border-sky-200 shadow-[0_6px_0_0_#bae6fd] hover:border-sky-300 hover:shadow-[0_6px_0_0_#7dd3fc]";
+                const idleStyleNum = "bg-white hover:bg-slate-50 border-sky-200 text-slate-800 shadow-[0_6px_0_0_#bae6fd] hover:shadow-[0_6px_0_0_#7dd3fc] border-t-4 border-t-sky-400";
                 const correctStyleNum = "bg-gradient-to-br from-emerald-400 to-emerald-500 border-emerald-600 shadow-[0_6px_0_0_#059669] text-white pointer-events-none translate-y-[2px]";
                 const errorStyleNum = "bg-gradient-to-br from-rose-400 to-rose-500 border-rose-600 shadow-[0_6px_0_0_#e11d48] text-white animate-shake translate-y-[2px]";
                 
-                const idleStyleOdd = "bg-gradient-to-b from-white to-indigo-50 border-indigo-200 shadow-[0_6px_0_0_#c7d2fe] hover:border-indigo-300 hover:shadow-[0_6px_0_0_#a5b4fc]";
+                const idleStyleOdd = "bg-white hover:bg-slate-50 border-indigo-200 text-slate-800 shadow-[0_6px_0_0_#c7d2fe] hover:shadow-[0_6px_0_0_#a5b4fc] border-t-4 border-t-indigo-400";
                 const correctStyleOdd = "bg-gradient-to-b from-emerald-400 to-emerald-500 border-emerald-600 shadow-[0_6px_0_0_#059669] text-white pointer-events-none translate-y-[2px]";
                 const errorStyleOdd = "bg-gradient-to-b from-rose-400 to-rose-500 border-rose-600 shadow-[0_6px_0_0_#e11d48] text-white animate-shake translate-y-[2px]";
                 
@@ -151,7 +151,7 @@ export default function GameScreen(props) {
                   <button key={idx} onClick={() => handleTileTap(idx)}
                     className={`relative flex items-center justify-center transition-all ${shapeClass} ${activeClasses}`}>
                     <div className="flex flex-col items-center justify-center text-center">
-                      <span className={`font-black tracking-tight leading-tight ${isNum ? 'text-3xl sm:text-4xl' : isDense ? 'text-[13px] sm:text-sm' : 'text-base sm:text-lg'} ${tile.solved || tile.errorState ? 'text-white drop-shadow-md' : isNum ? 'text-sky-950' : 'text-indigo-950'} break-words line-clamp-4`}>
+                      <span className={`font-black tracking-tight leading-tight ${isNum ? 'text-3xl sm:text-4xl' : isDense ? 'text-[13px] sm:text-sm' : 'text-base sm:text-lg'} ${tile.solved || tile.errorState ? 'text-white drop-shadow-md' : 'text-slate-800'} break-words line-clamp-4`}>
                         {displayText}
                       </span>
                     </div>

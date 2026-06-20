@@ -8,15 +8,15 @@ export const getTileColor = (category = '', index = 0) => {
   }
   const colorIndex = Math.abs(hash) % 5;
 
-  if (lc.includes('major')) return 'bg-gradient-to-br from-blue-100 to-indigo-100 hover:from-blue-200 hover:to-indigo-200 border-indigo-300 text-indigo-900 shadow-[0_4px_0_0_#818cf8] active:shadow-none active:translate-y-[4px]';
-  if (lc.includes('minor')) return 'bg-gradient-to-br from-violet-100 to-fuchsia-100 hover:from-violet-200 hover:to-fuchsia-200 border-fuchsia-300 text-fuchsia-900 shadow-[0_4px_0_0_#c084fc] active:shadow-none active:translate-y-[4px]';
+  if (lc.includes('major')) return 'bg-white hover:bg-slate-50 border-blue-200 text-slate-800 shadow-[0_4px_0_0_#cbd5e1] active:shadow-none active:translate-y-[4px] border-t-4 border-t-blue-400';
+  if (lc.includes('minor')) return 'bg-white hover:bg-slate-50 border-violet-200 text-slate-800 shadow-[0_4px_0_0_#cbd5e1] active:shadow-none active:translate-y-[4px] border-t-4 border-t-violet-400';
 
   const palette = [
-    'bg-gradient-to-br from-teal-100 to-emerald-100 hover:from-teal-200 hover:to-emerald-200 border-emerald-300 text-emerald-900 shadow-[0_4px_0_0_#34d399] active:shadow-none active:translate-y-[4px]',
-    'bg-gradient-to-br from-sky-100 to-blue-100 hover:from-sky-200 hover:to-blue-200 border-blue-300 text-blue-900 shadow-[0_4px_0_0_#60a5fa] active:shadow-none active:translate-y-[4px]',
-    'bg-gradient-to-br from-rose-100 to-pink-100 hover:from-rose-200 hover:to-pink-200 border-pink-300 text-pink-900 shadow-[0_4px_0_0_#f472b6] active:shadow-none active:translate-y-[4px]',
-    'bg-gradient-to-br from-amber-100 to-orange-100 hover:from-amber-200 hover:to-orange-200 border-orange-300 text-orange-900 shadow-[0_4px_0_0_#fb923c] active:shadow-none active:translate-y-[4px]',
-    'bg-gradient-to-br from-fuchsia-100 to-purple-100 hover:from-fuchsia-200 hover:to-purple-200 border-purple-300 text-purple-900 shadow-[0_4px_0_0_#a78bfa] active:shadow-none active:translate-y-[4px]'
+    'bg-white hover:bg-slate-50 border-teal-200 text-slate-800 shadow-[0_4px_0_0_#cbd5e1] active:shadow-none active:translate-y-[4px] border-t-4 border-t-teal-400',
+    'bg-white hover:bg-slate-50 border-sky-200 text-slate-800 shadow-[0_4px_0_0_#cbd5e1] active:shadow-none active:translate-y-[4px] border-t-4 border-t-sky-400',
+    'bg-white hover:bg-slate-50 border-rose-200 text-slate-800 shadow-[0_4px_0_0_#cbd5e1] active:shadow-none active:translate-y-[4px] border-t-4 border-t-rose-400',
+    'bg-white hover:bg-slate-50 border-amber-200 text-slate-800 shadow-[0_4px_0_0_#cbd5e1] active:shadow-none active:translate-y-[4px] border-t-4 border-t-amber-400',
+    'bg-white hover:bg-slate-50 border-fuchsia-200 text-slate-800 shadow-[0_4px_0_0_#cbd5e1] active:shadow-none active:translate-y-[4px] border-t-4 border-t-fuchsia-400'
   ];
   return palette[colorIndex];
 };
