@@ -11,7 +11,7 @@ export default function GameScreen(props) {
   if (!activeTargetObjective) return null;
   const currentSubMode = activeGameMode === 'MIXED_MARATHON' ? activeTargetObjective.marathonSubMode : activeGameMode;
   const total = boardTiles.length;
-  const cols = currentSubMode === 'CANVAS' ? 4 : (total <= 4 ? 2 : 3);
+  const cols = 4;
   const rows = [];
   for (let i = 0; i < total; i += cols) rows.push(boardTiles.slice(i, i + cols));
 
@@ -69,32 +69,7 @@ export default function GameScreen(props) {
       </div>
 
       <div className={`flex-1 overflow-hidden transform transition-all duration-500 flex flex-col justify-center ${isShuffling ? 'scale-90 opacity-0' : 'scale-100 opacity-100'}`}>
-        {currentSubMode === 'NUMERICAL' ? (
-          <div className="flex flex-col items-center justify-center gap-4 w-full px-4 h-full">
-            <div className="grid grid-cols-2 gap-4 w-full max-w-md my-auto">
-              {boardTiles.map((tile, idx) => {
-                const numData = parseNumericalData(tile.criterion.label);
-                return (
-                  <div key={idx} onClick={() => handleTileTap(idx)}
-                    className={`aspect-[3/2] flex flex-col items-center justify-center rounded-3xl cursor-pointer active:scale-95 transition-all shadow-lg border-b-4 border-2 ${
-                      tile.solved ? 'bg-emerald-500 border-emerald-700 text-white pointer-events-none' :
-                      tile.errorState ? 'bg-rose-500 border-rose-700 text-white animate-shake' :
-                      'bg-white border-slate-200 hover:border-amber-400 hover:bg-amber-50 hover:-translate-y-1'
-                    }`}>
-                    <span className={`text-5xl font-black tracking-tighter leading-none ${tile.solved ? 'text-white' : tile.errorState ? 'text-white' : 'text-amber-600'}`}>
-                      {numData?.number || tile.criterion.label}
-                    </span>
-                    {numData?.suffix && (
-                      <span className={`text-sm font-bold mt-1 ${tile.solved ? 'text-emerald-100' : tile.errorState ? 'text-rose-100' : 'text-slate-400'}`}>
-                        {numData.suffix}
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        ) : (
+        {currentSubMode === 'CANVAS' ? (
           <div className="w-full h-full p-2 flex flex-col justify-center my-auto overflow-y-auto max-h-full">
             <table className="w-full h-full table-fixed border-separate" style={{ borderSpacing: '6px' }}>
               <tbody>
@@ -103,7 +78,7 @@ export default function GameScreen(props) {
                     {row.map((tile, ci) => {
                       const idx = ri * cols + ci;
                       const color = getTileColor(tile.criterion.criterionCategory);
-                      const isPair = tile.criterion.tileCount === 2 && currentSubMode === 'CANVAS';
+                      const isPair = tile.criterion.tileCount === 2;
                       return (
                         <td key={ci} onClick={() => handleTileTap(idx)}
                           className={`h-20 sm:h-24 p-2 relative cursor-pointer active:scale-95 transition-all text-center align-middle border-2 shadow-sm rounded-xl ${
@@ -115,7 +90,7 @@ export default function GameScreen(props) {
                           {isPair && !tile.solved && !tile.errorState && (
                             <div className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-white/70 flex items-center justify-center text-[6px] font-black opacity-80 shadow-sm">½</div>
                           )}
-                          <p className={`font-black leading-tight tracking-tight ${currentSubMode !== 'CANVAS' ? 'text-sm' : 'text-xs'}`}>
+                          <p className={`font-black leading-tight tracking-tight text-xs`}>
                             {tile.criterion.label}
                           </p>
                         </td>
@@ -129,6 +104,50 @@ export default function GameScreen(props) {
                 ))}
               </tbody>
             </table>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center w-full h-full px-4 py-6 overflow-y-auto">
+            <div className={`w-full max-w-md my-auto ${currentSubMode === 'NUMERICAL' ? 'flex flex-wrap justify-center gap-5 sm:gap-8' : boardTiles.length >= 5 ? 'grid grid-cols-2 gap-3' : 'flex flex-col gap-4'}`}>
+              {boardTiles.map((tile, idx) => {
+                const isNum = currentSubMode === 'NUMERICAL';
+                const isDense = !isNum && boardTiles.length >= 5;
+                const numData = isNum ? parseNumericalData(tile.criterion.label) : null;
+                const displayText = isNum ? (numData?.number || tile.criterion.label) : tile.criterion.label;
+                const suffixText = !isNum ? null : null; // Units are now strictly in the question stem for numericals
+
+                const idleStyleNum = "bg-gradient-to-br from-white to-sky-100 border-sky-300 shadow-[0_6px_0_0_#7dd3fc] hover:border-sky-400";
+                const correctStyleNum = "bg-gradient-to-br from-emerald-400 to-emerald-500 border-emerald-600 shadow-[0_6px_0_0_#059669] text-white pointer-events-none";
+                const errorStyleNum = "bg-gradient-to-br from-rose-400 to-rose-500 border-rose-600 shadow-[0_6px_0_0_#e11d48] text-white animate-shake";
+                
+                const idleStyleOdd = "bg-gradient-to-b from-white to-purple-50 border-purple-200 shadow-[0_5px_0_0_#e9d5ff] hover:border-purple-300";
+                const correctStyleOdd = "bg-gradient-to-b from-emerald-400 to-emerald-500 border-emerald-600 shadow-[0_5px_0_0_#059669] text-white pointer-events-none";
+                const errorStyleOdd = "bg-gradient-to-b from-rose-400 to-rose-500 border-rose-600 shadow-[0_5px_0_0_#e11d48] text-white animate-shake";
+                
+                let activeClasses = '';
+                if (isNum) activeClasses = tile.solved ? correctStyleNum : tile.errorState ? errorStyleNum : idleStyleNum;
+                else activeClasses = tile.solved ? correctStyleOdd : tile.errorState ? errorStyleOdd : idleStyleOdd;
+                
+                const shapeClass = isNum 
+                  ? 'aspect-square w-[42%] max-w-[140px] rounded-full border-4 p-2 active:translate-y-[6px]' 
+                  : `w-full rounded-2xl border-2 ${isDense ? 'min-h-[4rem] p-3' : 'min-h-[5.5rem] p-4'} active:translate-y-[5px]`;
+
+                return (
+                  <button key={idx} onClick={() => handleTileTap(idx)}
+                    className={`relative flex items-center justify-center transition-all active:shadow-none ${shapeClass} ${activeClasses}`}>
+                    <div className="flex flex-col items-center justify-center text-center">
+                      <span className={`font-black tracking-tight leading-none ${isNum ? 'text-3xl sm:text-4xl' : isDense ? 'text-sm' : 'text-lg'} ${tile.solved || tile.errorState ? 'text-white' : isNum ? 'text-sky-900' : 'text-purple-900'} break-words line-clamp-3`}>
+                        {displayText}
+                      </span>
+                      {suffixText && (
+                        <span className={`text-xs sm:text-sm font-extrabold mt-1.5 uppercase tracking-wider ${tile.solved ? 'text-emerald-100' : tile.errorState ? 'text-rose-100' : 'text-sky-600/80'}`}>
+                          {suffixText}
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>

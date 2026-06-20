@@ -190,76 +190,96 @@ export default function ReviewScreen(props) {
               </div>
             </div>
 
-            {/* Tile groups */}
-            <div className="divide-y divide-amber-100">
-              {numericalGroups.map((group, gi) => {
-                const filteredHeadings = group.headings.map(h => ({
-                  ...h,
-                  rows: h.rows.map(r => ({
-                    ...r,
-                    tiles: numTab === 'played' ? r.tiles.filter(t => t.wasPlayed) : r.tiles
-                  })).filter(r => r.tiles.length > 0)
-                })).filter(h => h.rows.length > 0);
+            {/* Flat Summary for Played Tab */}
+            {numTab === 'played' && playedNumericalTiles > 0 && (
+              <div className="p-4 space-y-2 bg-amber-50/30">
+                {numericalGroups.flatMap(g => g.headings.flatMap(h => h.rows.flatMap(r => r.tiles.filter(t => t.wasPlayed).map(t => {
+                  const parts = [g.tableName];
+                  if (h.headingText) parts.push(h.headingText);
+                  if (t.criterionText && t.criterionText !== h.headingText) parts.push(t.criterionText);
+                  parts.push(t.label);
+                  const fullText = parts.filter(Boolean).join(' — ');
+                  
+                  const statusIcon = t.wasSolved ? '✓' : t.wasSkipped ? '⚠' : '✗';
+                  const statusColor = t.wasSolved ? 'text-emerald-600 bg-emerald-100' : t.wasSkipped ? 'text-amber-600 bg-amber-100' : 'text-rose-600 bg-rose-100';
 
-                if (filteredHeadings.length === 0) return null;
-
-                return (
-                  <div key={gi}>
-                    {/* Table name header */}
-                    <div className="px-4 py-2 bg-indigo-50 border-b border-indigo-100">
-                      <p className="text-[10px] font-black text-indigo-700 uppercase tracking-widest">📋 {group.tableName}</p>
+                  return (
+                    <div key={t.id} className="flex items-start gap-3 bg-white border border-slate-200 p-3 rounded-xl shadow-sm">
+                      <div className={`flex-shrink-0 mt-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black ${statusColor}`}>
+                        {statusIcon}
+                      </div>
+                      <p className="text-sm font-bold text-slate-700 leading-tight">
+                        {fullText}
+                      </p>
                     </div>
+                  );
+                }))))}
+              </div>
+            )}
 
-                    {filteredHeadings.map((heading, hi) => (
-                      <div key={hi}>
-                        {/* Section heading */}
-                        {heading.headingText && (
-                          <div className="px-4 py-1.5 bg-amber-50/60 border-b border-amber-100">
-                            <p className="text-[9px] font-black text-amber-700 uppercase tracking-widest">{heading.headingText}</p>
-                          </div>
-                        )}
-                        {/* Tile rows */}
-                        {heading.rows.map((row, ri) => (
-                          <div key={ri} className="px-4 py-2 border-b border-slate-100 last:border-0">
-                            <div className="flex flex-col gap-1.5">
-                              {row.tiles.map(tile => {
-                                const statusIcon = tile.wasSolved ? '✓' : tile.wasSkipped ? '⚠' : tile.wasPlayed ? '✗' : null;
-                                const statusColor = tile.wasSolved ? 'text-emerald-600' : tile.wasSkipped ? 'text-amber-600' : tile.wasPlayed ? 'text-rose-500' : '';
-                                const bgColor = tile.wasSolved ? 'bg-emerald-50 border-emerald-200' : tile.wasSkipped ? 'bg-amber-50 border-amber-200' : tile.wasPlayed ? 'bg-rose-50 border-rose-200' : 'bg-slate-50 border-slate-200';
+            {/* Hierarchical View for All Tab */}
+            {numTab === 'all' && (
+              <div className="divide-y divide-amber-100">
+                {numericalGroups.map((group, gi) => {
+                  const filteredHeadings = group.headings.map(h => ({
+                    ...h,
+                    rows: h.rows.map(r => ({ ...r, tiles: r.tiles })).filter(r => r.tiles.length > 0)
+                  })).filter(h => h.rows.length > 0);
 
-                                return (
-                                  <div key={tile.id} className={`flex items-center justify-between px-3 py-2 rounded-xl border ${bgColor} transition-all`}>
-                                    {/* Left: criterion context + full label */}
-                                    <div className="flex-1 min-w-0">
-                                      {tile.criterionText && (
-                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider truncate leading-tight">{tile.criterionText}</p>
-                                      )}
-                                      <p className="text-xs font-black text-slate-800 leading-tight">{tile.label}</p>
-                                    </div>
-                                    {/* Right: parsed number chip + status */}
-                                    <div className="flex items-center gap-2 ml-3 flex-shrink-0">
-                                      <div className="flex flex-col items-center bg-white border border-amber-200 rounded-lg px-2.5 py-1 shadow-sm min-w-[48px]">
-                                        <span className="text-base font-black text-amber-600 leading-none">{tile.parsed.number}</span>
-                                        {tile.parsed.suffix && (
-                                          <span className="text-[8px] font-bold text-slate-400 leading-tight">{tile.parsed.suffix}</span>
+                  if (filteredHeadings.length === 0) return null;
+
+                  return (
+                    <div key={gi}>
+                      <div className="px-4 py-2 bg-indigo-50 border-b border-indigo-100">
+                        <p className="text-[10px] font-black text-indigo-700 uppercase tracking-widest">📋 {group.tableName}</p>
+                      </div>
+                      {filteredHeadings.map((heading, hi) => (
+                        <div key={hi}>
+                          {heading.headingText && (
+                            <div className="px-4 py-1.5 bg-amber-50/60 border-b border-amber-100">
+                              <p className="text-[9px] font-black text-amber-700 uppercase tracking-widest">{heading.headingText}</p>
+                            </div>
+                          )}
+                          {heading.rows.map((row, ri) => (
+                            <div key={ri} className="px-4 py-2 border-b border-slate-100 last:border-0">
+                              <div className="flex flex-col gap-1.5">
+                                {row.tiles.map(tile => {
+                                  const statusIcon = tile.wasSolved ? '✓' : tile.wasSkipped ? '⚠' : tile.wasPlayed ? '✗' : null;
+                                  const statusColor = tile.wasSolved ? 'text-emerald-600' : tile.wasSkipped ? 'text-amber-600' : tile.wasPlayed ? 'text-rose-500' : '';
+                                  const bgColor = tile.wasSolved ? 'bg-emerald-50 border-emerald-200' : tile.wasSkipped ? 'bg-amber-50 border-amber-200' : tile.wasPlayed ? 'bg-rose-50 border-rose-200' : 'bg-slate-50 border-slate-200';
+
+                                  return (
+                                    <div key={tile.id} className={`flex items-center justify-between px-3 py-2 rounded-xl border ${bgColor} transition-all`}>
+                                      <div className="flex-1 min-w-0">
+                                        {tile.criterionText && (
+                                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider truncate leading-tight">{tile.criterionText}</p>
+                                        )}
+                                        <p className="text-xs font-black text-slate-800 leading-tight">{tile.label}</p>
+                                      </div>
+                                      <div className="flex items-center gap-2 ml-3 flex-shrink-0">
+                                        <div className="flex flex-col items-center bg-white border border-amber-200 rounded-lg px-2.5 py-1 shadow-sm min-w-[48px]">
+                                          <span className="text-base font-black text-amber-600 leading-none">{tile.parsed.number}</span>
+                                          {tile.parsed.suffix && (
+                                            <span className="text-[8px] font-bold text-slate-400 leading-tight">{tile.parsed.suffix}</span>
+                                          )}
+                                        </div>
+                                        {statusIcon && (
+                                          <span className={`text-[10px] font-black ${statusColor} w-4 text-center`}>{statusIcon}</span>
                                         )}
                                       </div>
-                                      {statusIcon && (
-                                        <span className={`text-[10px] font-black ${statusColor} w-4 text-center`}>{statusIcon}</span>
-                                      )}
                                     </div>
-                                  </div>
-                                );
-                              })}
+                                  );
+                                })}
+                              </div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                    ))}
-                  </div>
-                );
-              })}
-            </div>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
 
             {/* Empty state for "played" tab */}
             {numTab === 'played' && playedNumericalTiles === 0 && (

@@ -553,10 +553,12 @@ export default function CanvasComposer({
       const findAutoDistractors = (target) => {
         const targetData = parseNumericalData(target.label);
         const exclude = new Set([target.tileId]);
-        let pool = numTiles.filter(t => { if (exclude.has(t.tileId)) return false; const d = parseNumericalData(t.label); return d && d.unitKey === targetData.unitKey; });
-        if (pool.length < 3) { pool = numTiles.filter(t => { if (exclude.has(t.tileId)) return false; const d = parseNumericalData(t.label); return d && d.suffix === targetData.suffix; }); }
-        if (pool.length < 3) pool = numTiles.filter(t => !exclude.has(t.tileId) && t.tableName === target.tableName);
-        if (pool.length < 3) pool = numTiles.filter(t => !exclude.has(t.tileId));
+        // Strict matching: unitKey or suffix
+        let pool = numTiles.filter(t => { 
+          if (exclude.has(t.tileId)) return false; 
+          const d = parseNumericalData(t.label); 
+          return d && (d.unitKey === targetData.unitKey || d.suffix === targetData.suffix); 
+        });
         return pool.sort(() => Math.random() - 0.5).slice(0, 3);
       };
 
@@ -568,10 +570,15 @@ export default function CanvasComposer({
         return parts.filter(Boolean).join(' — ');
       };
 
+      const validTargets = numTiles.filter(t => findAutoDistractors(t).length >= 3);
+      if (validTargets.length === 0) {
+        return alert('Need more data! You need at least 4 numericals which match the exact suffix/unit to auto-generate.');
+      }
+
       const usedTargetIds = new Set();
-      const count = Math.min(numTiles.length, 20); // generate up to 20 questions or however many tiles exist
+      const count = Math.min(validTargets.length, 20); // generate up to 20 questions or however many tiles exist
       for (let i = 0; i < count; i++) {
-        const available = numTiles.filter(t => !usedTargetIds.has(t.tileId));
+        const available = validTargets.filter(t => !usedTargetIds.has(t.tileId));
         if (!available.length) break;
         const target = available[Math.floor(Math.random() * available.length)];
         usedTargetIds.add(target.tileId);
@@ -718,6 +725,19 @@ export default function CanvasComposer({
           <button onClick={() => {
             const modeMap = { CANVAS: 'CANVAS', NUMERICAL: 'NUMERICAL', ODD_ONE_OUT: 'ODD_ONE_OUT' };
             const mode = modeMap[type] || 'CANVAS';
+            
+            if (mode === 'NUMERICAL') {
+              const allDone = (canvas.questions || []).every(q => q.targetTileId && (q.decoyTileIds || []).length >= 3);
+              if (!allDone && (canvas.questions || []).length > 0) {
+                return alert('Cannot preview: Please ensure all Numerical questions have a target and at least 3 matching decoys (4 options total).');
+              }
+            } else if (mode === 'ODD_ONE_OUT') {
+              const allDone = (canvas.questions || []).every(q => q.distractorTileId && (q.correctTileIds || []).length > 0);
+              if (!allDone && (canvas.questions || []).length > 0) {
+                return alert('Cannot preview: Please ensure all Odd One Out questions have a distractor and at least 1 correct fit tile.');
+              }
+            }
+
             setIsPreviewMode(true);
             setActiveGameMode(mode);
             startGame(canvas.chapter, canvas.id, null, false, true, mode);
