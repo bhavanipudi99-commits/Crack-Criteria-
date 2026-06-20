@@ -36,36 +36,52 @@ export default function GameScreen(props) {
           </span>
           <span className="text-[10px] font-black text-indigo-600 uppercase tracking-wider">
             {currentSubMode === 'CANVAS' ? `Question ${props.activeQuestionIdx + 1}/${props.activeCanvasConfig?.questions.length}` : `Round ${score.correct + 1}`}
-          </span>
+      <div className="flex items-center justify-between mb-4 bg-white/60 backdrop-blur-md p-3 rounded-2xl shadow-sm border border-white/40">
+        <div className="flex items-center gap-3">
+          <button onClick={() => { setScreen('PLAYER_HOME'); setScore({ correct: 0, wrong: 0 }); }} className="text-xl hover:scale-110 transition-transform active:scale-95 drop-shadow-sm">🏠</button>
+          <div className="flex flex-col">
+            <h1 className="text-sm font-black text-slate-800 tracking-tight leading-tight">{activeCanvasConfig?.name || "Global Marathon"}</h1>
+            {activeGameMode === 'MARATHON' && (
+              <p className="text-[10px] font-bold text-fuchsia-600 uppercase tracking-widest">{marathonLevel ? `Level ${marathonLevel}` : 'Marathon Mode'}</p>
+            )}
+            {activeGameMode === 'MIXED_MARATHON' && (
+              <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest">Global Marathon</p>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2">
-          {activeGameMode === 'MIXED_MARATHON' && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-fuchsia-200 bg-fuchsia-50 text-fuchsia-600 shadow-sm animate-pulse">
-              <span className="text-[9px] font-bold uppercase">Lives</span>
-              <span className="text-xs font-black">{'❤️'.repeat(Math.max(0, marathonLives))}</span>
+          {isMarathon && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-white/80 border border-slate-200 shadow-sm">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Lives</span>
+              <div className="flex gap-0.5">
+                {[...Array(3)].map((_, i) => (
+                  <span key={i} className={`text-[10px] ${i < marathonLives ? 'text-rose-500' : 'text-slate-200'}`}>❤️</span>
+                ))}
+              </div>
             </div>
           )}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-emerald-200 bg-emerald-50 text-emerald-600">
-            <span className="text-[9px] font-bold uppercase">Points</span>
-            <span className="text-xs font-black">{((score.correct * (difficulty === 'hard' ? 1.5 : difficulty === 'medium' ? 1.25 : 1.0)) - (score.wrong * 0.33)).toFixed(1)}</span>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/80 border border-slate-200 shadow-sm text-clinical-blue">
+            <span className="text-[10px] font-bold uppercase tracking-wider">Score</span>
+            <span className="text-sm font-black">{((score.correct * (difficulty === 'hard' ? 1.5 : difficulty === 'medium' ? 1.25 : 1.0)) - (score.wrong * 0.33)).toFixed(1)}</span>
           </div>
-          <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border transition-all ${timeRemaining <= 6 ? 'border-clinical-crimson bg-red-50 text-clinical-crimson timer-panic' : 'border-slate-200 bg-white text-clinical-gold'}`}>
-            <span className="text-[9px] font-bold uppercase">Clock</span>
-            <span className="text-xs font-black">{timeRemaining}s</span>
+          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border shadow-sm transition-all duration-300 ${timeRemaining <= 6 ? 'border-rose-400 bg-rose-50 text-rose-600 timer-panic' : 'border-slate-200 bg-white/80 text-amber-500'}`}>
+            <span className="text-[10px] font-bold uppercase tracking-wider">Clock</span>
+            <span className="text-sm font-black">{timeRemaining}s</span>
           </div>
         </div>
       </div>
-      <div className="mx-3 mt-3 bg-white p-3 rounded-xl border border-slate-200 shadow-sm text-center">
-        <span className="text-[10px] font-bold text-clinical-blue uppercase tracking-widest">{activeTargetObjective.subheading || 'Find:'}</span>
+      <div className="mx-2 mt-2 bg-gradient-to-br from-white to-slate-50/80 backdrop-blur-sm p-4 rounded-2xl border border-slate-200 shadow-md text-center relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-sky-400 via-indigo-400 to-fuchsia-400 opacity-80"></div>
+        <span className="text-[10px] font-extrabold text-indigo-500 uppercase tracking-[0.2em]">{activeTargetObjective.subheading || 'Find:'}</span>
         {currentSubMode === 'NUMERICAL' ? (
-          <>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-0.5 mb-1">Select the correct value for:</p>
-            <h2 className="text-base font-black text-slate-900 leading-snug">{activeTargetObjective.diagnosis}</h2>
-          </>
+          <div className="mt-1.5">
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Select the correct value for</p>
+            <h2 className="text-lg sm:text-xl font-black text-slate-900 leading-tight drop-shadow-sm">{activeTargetObjective.diagnosis}</h2>
+          </div>
         ) : (
-          <h2 className={`font-black tracking-tight mt-0.5 leading-tight text-lg text-slate-900`}>{activeTargetObjective.diagnosis}</h2>
+          <h2 className={`font-black tracking-tight mt-1.5 leading-tight text-xl sm:text-2xl text-slate-900 drop-shadow-sm`}>{activeTargetObjective.diagnosis}</h2>
         )}
-        {currentSubMode === 'CANVAS' && <p className="text-[9px] text-slate-400 mt-1 text-left">Tap all matching tiles · ½ badges = jigsaw pair</p>}
+        {currentSubMode === 'CANVAS' && <p className="text-[10px] font-bold text-slate-400 mt-2 text-left flex items-center gap-1.5"><span className="w-4 h-4 rounded-full bg-slate-100 flex items-center justify-center text-[8px] text-slate-600">½</span> match jigsaw pairs</p>}
       </div>
 
       <div className={`flex-1 overflow-hidden transform transition-all duration-500 flex flex-col justify-center ${isShuffling ? 'scale-90 opacity-0' : 'scale-100 opacity-100'}`}>
@@ -81,16 +97,16 @@ export default function GameScreen(props) {
                       const isPair = tile.criterion.tileCount === 2;
                       return (
                         <td key={ci} onClick={() => handleTileTap(idx)}
-                          className={`h-20 sm:h-24 p-2 relative cursor-pointer active:scale-95 transition-all text-center align-middle border-2 shadow-sm rounded-xl ${
-                            tile.solved ? 'bg-emerald-500 border-emerald-700 text-white pointer-events-none' :
-                            tile.errorState ? 'bg-rose-500 border-rose-700 text-white animate-shake' :
+                          className={`h-20 sm:h-24 p-2 relative cursor-pointer active:scale-95 transition-all text-center align-middle border-2 rounded-[14px] ${
+                            tile.solved ? 'bg-gradient-to-br from-emerald-400 to-emerald-500 border-emerald-600 shadow-[0_4px_0_0_#059669] text-white pointer-events-none' :
+                            tile.errorState ? 'bg-gradient-to-br from-rose-400 to-rose-500 border-rose-600 shadow-[0_4px_0_0_#e11d48] text-white animate-shake' :
                             color
                           }`}
                           style={{ display: 'table-cell', borderCollapse: 'separate' }}>
                           {isPair && !tile.solved && !tile.errorState && (
-                            <div className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-white/70 flex items-center justify-center text-[6px] font-black opacity-80 shadow-sm">½</div>
+                            <div className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-white/90 flex items-center justify-center text-[7px] font-black text-slate-700 shadow-sm backdrop-blur-sm">½</div>
                           )}
-                          <p className={`font-black leading-tight tracking-tight text-xs`}>
+                          <p className={`font-black leading-snug tracking-tight text-xs sm:text-sm drop-shadow-sm`}>
                             {tile.criterion.label}
                           </p>
                         </td>
@@ -107,7 +123,7 @@ export default function GameScreen(props) {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center w-full h-full px-4 py-6 overflow-y-auto">
-            <div className={`w-full max-w-md my-auto ${currentSubMode === 'NUMERICAL' ? 'flex flex-wrap justify-center gap-5 sm:gap-8' : boardTiles.length >= 5 ? 'grid grid-cols-2 gap-3' : 'flex flex-col gap-4'}`}>
+            <div className={`w-full max-w-lg mx-auto my-auto ${currentSubMode === 'NUMERICAL' ? 'flex flex-wrap justify-center gap-4 sm:gap-6' : boardTiles.length >= 5 ? 'grid grid-cols-2 gap-3 sm:gap-4' : 'flex flex-col gap-3 sm:gap-4'}`}>
               {boardTiles.map((tile, idx) => {
                 const isNum = currentSubMode === 'NUMERICAL';
                 const isDense = !isNum && boardTiles.length >= 5;
@@ -115,34 +131,29 @@ export default function GameScreen(props) {
                 const displayText = isNum ? (numData?.number || tile.criterion.label) : tile.criterion.label;
                 const suffixText = !isNum ? null : null; // Units are now strictly in the question stem for numericals
 
-                const idleStyleNum = "bg-gradient-to-br from-white to-sky-100 border-sky-300 shadow-[0_6px_0_0_#7dd3fc] hover:border-sky-400";
-                const correctStyleNum = "bg-gradient-to-br from-emerald-400 to-emerald-500 border-emerald-600 shadow-[0_6px_0_0_#059669] text-white pointer-events-none";
-                const errorStyleNum = "bg-gradient-to-br from-rose-400 to-rose-500 border-rose-600 shadow-[0_6px_0_0_#e11d48] text-white animate-shake";
+                const idleStyleNum = "bg-gradient-to-br from-white to-sky-50 border-sky-200 shadow-[0_6px_0_0_#bae6fd] hover:border-sky-300 hover:shadow-[0_6px_0_0_#7dd3fc]";
+                const correctStyleNum = "bg-gradient-to-br from-emerald-400 to-emerald-500 border-emerald-600 shadow-[0_6px_0_0_#059669] text-white pointer-events-none translate-y-[2px]";
+                const errorStyleNum = "bg-gradient-to-br from-rose-400 to-rose-500 border-rose-600 shadow-[0_6px_0_0_#e11d48] text-white animate-shake translate-y-[2px]";
                 
-                const idleStyleOdd = "bg-gradient-to-b from-white to-purple-50 border-purple-200 shadow-[0_5px_0_0_#e9d5ff] hover:border-purple-300";
-                const correctStyleOdd = "bg-gradient-to-b from-emerald-400 to-emerald-500 border-emerald-600 shadow-[0_5px_0_0_#059669] text-white pointer-events-none";
-                const errorStyleOdd = "bg-gradient-to-b from-rose-400 to-rose-500 border-rose-600 shadow-[0_5px_0_0_#e11d48] text-white animate-shake";
+                const idleStyleOdd = "bg-gradient-to-b from-white to-indigo-50 border-indigo-200 shadow-[0_6px_0_0_#c7d2fe] hover:border-indigo-300 hover:shadow-[0_6px_0_0_#a5b4fc]";
+                const correctStyleOdd = "bg-gradient-to-b from-emerald-400 to-emerald-500 border-emerald-600 shadow-[0_6px_0_0_#059669] text-white pointer-events-none translate-y-[2px]";
+                const errorStyleOdd = "bg-gradient-to-b from-rose-400 to-rose-500 border-rose-600 shadow-[0_6px_0_0_#e11d48] text-white animate-shake translate-y-[2px]";
                 
                 let activeClasses = '';
                 if (isNum) activeClasses = tile.solved ? correctStyleNum : tile.errorState ? errorStyleNum : idleStyleNum;
                 else activeClasses = tile.solved ? correctStyleOdd : tile.errorState ? errorStyleOdd : idleStyleOdd;
                 
                 const shapeClass = isNum 
-                  ? 'aspect-square w-[42%] max-w-[140px] rounded-full border-4 p-2 active:translate-y-[6px]' 
-                  : `w-full rounded-2xl border-2 ${isDense ? 'min-h-[4rem] p-3' : 'min-h-[5.5rem] p-4'} active:translate-y-[5px]`;
+                  ? 'aspect-square w-[38%] max-w-[130px] rounded-full border-4 p-2 active:translate-y-[8px] active:shadow-none' 
+                  : `w-full rounded-[18px] border-2 ${isDense ? 'min-h-[4.5rem] p-3' : 'min-h-[5.5rem] p-4 sm:p-5 sm:min-h-[6.5rem]'} active:translate-y-[6px] active:shadow-none`;
 
                 return (
                   <button key={idx} onClick={() => handleTileTap(idx)}
-                    className={`relative flex items-center justify-center transition-all active:shadow-none ${shapeClass} ${activeClasses}`}>
+                    className={`relative flex items-center justify-center transition-all ${shapeClass} ${activeClasses}`}>
                     <div className="flex flex-col items-center justify-center text-center">
-                      <span className={`font-black tracking-tight leading-none ${isNum ? 'text-3xl sm:text-4xl' : isDense ? 'text-sm' : 'text-lg'} ${tile.solved || tile.errorState ? 'text-white' : isNum ? 'text-sky-900' : 'text-purple-900'} break-words line-clamp-3`}>
+                      <span className={`font-black tracking-tight leading-tight ${isNum ? 'text-3xl sm:text-4xl' : isDense ? 'text-[13px] sm:text-sm' : 'text-base sm:text-lg'} ${tile.solved || tile.errorState ? 'text-white drop-shadow-md' : isNum ? 'text-sky-950' : 'text-indigo-950'} break-words line-clamp-4`}>
                         {displayText}
                       </span>
-                      {suffixText && (
-                        <span className={`text-xs sm:text-sm font-extrabold mt-1.5 uppercase tracking-wider ${tile.solved ? 'text-emerald-100' : tile.errorState ? 'text-rose-100' : 'text-sky-600/80'}`}>
-                          {suffixText}
-                        </span>
-                      )}
                     </div>
                   </button>
                 );
