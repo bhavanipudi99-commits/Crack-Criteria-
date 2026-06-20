@@ -571,6 +571,7 @@ export default function CanvasComposer({
 
       const findAutoDistractors = (target) => {
         const targetData = parseNumericalData(target.label);
+        if (!targetData) return [];
         const exclude = new Set([target.tileId]);
         // Strict matching: unitKey or suffix
         let pool = numTiles.filter(t => { 

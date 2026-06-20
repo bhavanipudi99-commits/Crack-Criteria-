@@ -338,6 +338,7 @@ export function useGameEngine({
     // --- Helper: find strict matching distractors ---
     const findDistractors = (target, excludeIds = []) => {
       const targetData = parseNumericalData(target.label);
+      if (!targetData) return [];
       const exclude = new Set([target.tileId, ...excludeIds]);
       // Strict choice: must match unitKey or suffix exactly
       let pool = numTiles.filter(t => {
