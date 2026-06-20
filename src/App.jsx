@@ -98,13 +98,7 @@ export default function App() {
   const [adminPassword, setAdminPassword] = useState('admin123');
   const [playerNickname, setPlayerNickname] = useState('Student');
   
-  // ── Marathon State ────────────────────────────────────────────────────────
-  const [marathonLives, setMarathonLives] = useState(10);
-  const [marathonMistakes, setMarathonMistakes] = useState(0);
-  const [marathonLevel, setMarathonLevel] = useState(1);
-  const [roundsCompletedInLevel, setRoundsCompletedInLevel] = useState({ canvas: 0, numerical: 0, oddOneOut: 0 });
-  const [showLevelUp, setShowLevelUp] = useState(false);
-  const [totalRoundsCompleted, setTotalRoundsCompleted] = useState(0);
+
 
   // ── Admin selection state ─────────────────────────────────────────────────
   const [selectedTableId, setSelectedTableId] = useState(() => {
@@ -176,7 +170,7 @@ export default function App() {
       {screen === 'GATE' && <GateScreen playerNickname={playerNickname} setPlayerNickname={setPlayerNickname} setScreen={setScreen} adminPassword={adminPassword} setAdminPassword={setAdminPassword} />}
       {screen === 'PLAYER_HOME' && <PlayerHome difficulty={difficulty} setDifficulty={setDifficulty} activeGameMode={activeGameMode} setActiveGameMode={setActiveGameMode} startGame={engine.startGame} appSubjects={appSubjects} appChapters={appChapters} appSubChapters={appSubChapters} expandedChapters={expandedChapters} setExpandedChapters={setExpandedChapters} canvasConfigs={canvasConfigs} setScreen={setScreen} adminPassword={adminPassword} />}
       {screen === 'GAME' && <GameScreen activeTargetObjective={engine.activeTargetObjective} activeGameMode={activeGameMode} boardTiles={engine.boardTiles} showLevelUp={engine.showLevelUp} marathonLevel={engine.marathonLevel} marathonLives={engine.marathonLives} activeCanvasIdx={engine.activeCanvasIdx} gameCanvasQueue={engine.gameCanvasQueue} score={engine.score} difficulty={difficulty} timeRemaining={engine.timeRemaining} parseNumericalData={parseNumericalData} handleTileTap={engine.handleTileTap} getTileColor={getTileColor} advanceToNext={engine.advanceToNext} setScreen={setScreen} setScore={engine.setScore} isShuffling={engine.isShuffling} activeQuestionIdx={engine.activeQuestionIdx} activeCanvasConfig={engine.activeCanvasConfig} />}
-      {screen === 'GAME_OVER' && <GameOverScreen marathonLevel={engine.marathonLevel} totalRoundsCompleted={totalRoundsCompleted} score={engine.score} difficulty={difficulty} setScreen={setScreen} />}
+      {screen === 'GAME_OVER' && <GameOverScreen marathonLevel={engine.marathonLevel} totalRoundsCompleted={engine.totalRoundsCompleted} score={engine.score} difficulty={difficulty} setScreen={setScreen} />}
       {screen === 'REVIEW' && <ReviewScreen gameCanvasQueue={engine.gameCanvasQueue} sessionAuditLog={engine.sessionAuditLog} criteriaTables={criteriaTables} score={engine.score} difficulty={difficulty} isPreviewMode={engine.isPreviewMode} setScreen={setScreen} setScore={engine.setScore} setIsPreviewMode={engine.setIsPreviewMode} activeGameMode={activeGameMode} parseNumericalData={parseNumericalData} activeChapterTables={engine.activeChapterTables} />}
       {(screen === 'ADMIN_HOME' || screen === 'CANVAS_COMPOSER') && <AdminDashboard 
         appSubjects={appSubjects} setAppSubjects={setAppSubjects}

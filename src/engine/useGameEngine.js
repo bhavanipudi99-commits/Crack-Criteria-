@@ -23,7 +23,15 @@ export function useGameEngine({
   const [score, setScore] = useState({ correct: 0, wrong: 0 });
   const [totalTargetCount, setTotalTargetCount] = useState(0);
   const [sessionAuditLog, setSessionAuditLog] = useState([]);
-  const [setIsPreviewMode] = useState(false);
+  
+  // ── Marathon State ────────────────────────────────────────────────────────
+  const [marathonLives, setMarathonLives] = useState(10);
+  const [marathonMistakes, setMarathonMistakes] = useState(0);
+  const [marathonLevel, setMarathonLevel] = useState(1);
+  const [roundsCompletedInLevel, setRoundsCompletedInLevel] = useState({ canvas: 0, numerical: 0, oddOneOut: 0 });
+  const [showLevelUp, setShowLevelUp] = useState(false);
+  const [totalRoundsCompleted, setTotalRoundsCompleted] = useState(0);
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
 
   const boardTilesRef = useRef(boardTiles);
   const activeTargetObjectiveRef = useRef(activeTargetObjective);
