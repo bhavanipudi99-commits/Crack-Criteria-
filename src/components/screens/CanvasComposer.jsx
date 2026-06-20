@@ -428,14 +428,29 @@ function OddOneOutEditor({ canvas, activeQ, criteriaTables, allTableTiles, setCa
 
   const swapDistractor = () => {
     const correctSet = new Set(activeQ?.correctTileIds || []);
+    const correctCellIds = new Set(correctTileObjs.map(t => t.cellId));
+    
+    const hasSubtileTargets = correctTileObjs.some(t => t.parentId !== null);
+    const hasMainTileTargets = correctTileObjs.some(t => t.parentId === null);
+
     const otherCanvasQIds = new Set(
       (canvasConfigs || []).filter(c => c.chapter === canvas.chapter && (!c.type || c.type === 'CANVAS'))
         .flatMap(c => c.questions.filter(q => !q.selectedTileIds?.some(id => correctSet.has(id))).flatMap(q => q.selectedTileIds || []))
     );
-    const preferred = allTableTiles.filter(t => otherCanvasQIds.has(t.id) && !correctSet.has(t.id));
-    const fallback = allTableTiles.filter(t => !correctSet.has(t.id));
+    
+    const filterDistractor = (t) => {
+      if (correctSet.has(t.id)) return false;
+      if (correctCellIds.has(t.cellId)) return false;
+      if (hasSubtileTargets && !hasMainTileTargets && t.parentId === null) return false;
+      if (hasMainTileTargets && !hasSubtileTargets && t.parentId !== null) return false;
+      return true;
+    };
+
+    const preferred = allTableTiles.filter(t => otherCanvasQIds.has(t.id) && filterDistractor(t));
+    const fallback = allTableTiles.filter(t => filterDistractor(t));
     const pool = preferred.length ? preferred : fallback;
-    if (!pool.length) return;
+    if (!pool.length) return alert('No valid distractors found that satisfy hierarchy/cell rules.');
+    
     const pick = pool[Math.floor(Math.random() * pool.length)];
     setCanvasConfigs(p => p.map(c => c.id !== canvas.id ? c : {
       ...c, questions: c.questions.map(q => q.id !== activeQ?.id ? q : { ...q, distractorTileId: pick.id })
@@ -511,7 +526,11 @@ export default function CanvasComposer({
     if (!canvas) return [];
     return (criteriaTables || []).filter(t => t.chapter === canvas.chapter)
       .flatMap(t => (t.rows || []).filter(r => !r.isHeading)
-        .flatMap(r => (r.cells || []).flatMap(c => (c.tiles || []).flatMap(tile => [tile, ...(tile.subtiles || [])]))));
+        .flatMap(r => (r.cells || []).flatMap((c, cellIdx) => (c.tiles || []).flatMap(tile => {
+          const baseTile = { ...tile, cellId: `${r.id}_${cellIdx}`, parentId: null };
+          const subs = (tile.subtiles || []).map(sub => ({ ...sub, cellId: `${r.id}_${cellIdx}`, parentId: tile.id }));
+          return [baseTile, ...subs];
+        }))));
   }, [criteriaTables, canvas?.chapter, canvas]);
 
   // ── After all hooks — safe to early return ────────────────────────────────
@@ -604,9 +623,23 @@ export default function CanvasComposer({
         if (usedQIds.has(srcQ.id)) continue;
         usedQIds.add(srcQ.id);
         const correctIds = srcQ.selectedTileIds || [];
+        const correctObjs = correctIds.map(id => allTiles.find(t => t.tileId === id)).filter(Boolean);
+        const correctCellIds = new Set(correctObjs.map(t => t.cellId));
+        const hasSub = correctObjs.some(t => t.parentId !== null);
+        const hasMain = correctObjs.some(t => t.parentId === null);
+
         const otherQIds = new Set(playableQs.filter(pq => pq.question.id !== srcQ.id).flatMap(pq => pq.question.selectedTileIds || []));
-        const distractorPool = allTiles.filter(t => otherQIds.has(t.tileId) && !correctIds.includes(t.tileId));
-        const fallback = allTiles.filter(t => !correctIds.includes(t.tileId));
+        
+        const filterD = (t) => {
+          if (correctIds.includes(t.tileId)) return false;
+          if (correctCellIds.has(t.cellId)) return false;
+          if (hasSub && !hasMain && t.parentId === null) return false;
+          if (hasMain && !hasSub && t.parentId !== null) return false;
+          return true;
+        };
+
+        const distractorPool = allTiles.filter(t => otherQIds.has(t.tileId) && filterD(t));
+        const fallback = allTiles.filter(t => filterD(t));
         const pool = distractorPool.length ? distractorPool : fallback;
         if (!pool.length) continue;
         const distractor = pool[Math.floor(Math.random() * pool.length)];
@@ -641,6 +674,7 @@ export default function CanvasComposer({
           } else if (c.type === 'ODD_ONE_OUT') {
             if ((q.correctTileIds || []).includes(tileId)) return { ...q, correctTileIds: q.correctTileIds.filter(i => i !== tileId) };
             if (q.distractorTileId === tileId) return { ...q, distractorTileId: null };
+            if (!q.distractorTileId) return { ...q, distractorTileId: tileId };
             return { ...q, correctTileIds: [...(q.correctTileIds || []), tileId] };
           }
           return q;
