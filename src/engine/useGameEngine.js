@@ -267,9 +267,6 @@ export function useGameEngine({
       if (hasSubtileTargets && !hasMainTileTargets && t.parentId === null) return false;
       if (hasMainTileTargets && !hasSubtileTargets && t.parentId !== null) return false;
 
-      // 0.5 Only use tiles that were selected in ANY question in this canvas
-      if (!allCanvasSelectedTileIds.has(t.tileId) && !allCanvasSelectedTileIds.has(t.parentId)) return false;
-
       // 1. Not a target tile
       if (t.diagnosis_id === question.id) return false;
       // 2. If its parent is a target, do not show this subtile as distractor
@@ -278,8 +275,6 @@ export function useGameEngine({
       if (targetParentIds.has(t.tileId)) return false; 
       // 4. No duplicate labels (case insensitive)
       if (usedLabels.has(t.label.trim().toLowerCase())) return false; 
-      // 5. Exclude target tiles that were already answered in previous questions of this canvas
-      if (previousTargetTileIds.has(t.tileId)) return false;
       
       usedLabels.add(t.label.trim().toLowerCase());
       return true;
