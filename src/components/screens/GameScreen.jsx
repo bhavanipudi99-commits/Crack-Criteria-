@@ -95,29 +95,40 @@ export default function GameScreen(props) {
             </div>
           </div>
         ) : (
-          <div className={`flex flex-wrap justify-center gap-2 px-3 py-2 my-auto overflow-y-auto max-h-full`}>
-            {boardTiles.map((tile, idx) => {
-              const color = getTileColor(tile.criterion.criterionCategory);
-              const isPair = tile.criterion.tileCount === 2 && currentSubMode === 'CANVAS';
-              const tileCount = boardTiles.length;
-              const sizeClass = tileCount <= 4 ? 'min-w-[140px] min-h-[80px] p-3 text-sm'
-                : tileCount <= 6 ? 'min-w-[120px] min-h-[72px] p-2.5 text-xs'
-                : tileCount <= 10 ? 'min-w-[100px] min-h-[64px] p-2 text-[11px]'
-                : 'min-w-[80px] min-h-[56px] p-1.5 text-[10px]';
-              return (
-                <div key={idx} onClick={() => handleTileTap(idx)}
-                  className={`relative flex flex-col items-center justify-center rounded-xl border-2 cursor-pointer active:scale-95 transition-all text-center shadow-sm flex-shrink-0 ${sizeClass} ${
-                    tile.solved ? 'bg-emerald-500 border-emerald-700 text-white pointer-events-none shadow-emerald-200' :
-                    tile.errorState ? 'bg-rose-500 border-rose-700 text-white animate-shake shadow-rose-200' :
-                    color
-                  }`}>
-                  {isPair && !tile.solved && !tile.errorState && (
-                    <div className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-white/70 flex items-center justify-center text-[6px] font-black opacity-80">½</div>
-                  )}
-                  <p className="font-black leading-tight tracking-tight">{tile.criterion.label}</p>
-                </div>
-              );
-            })}
+          <div className="w-full h-full p-2 flex flex-col justify-center my-auto overflow-y-auto max-h-full">
+            <table className="w-full h-full table-fixed border-separate" style={{ borderSpacing: '6px' }}>
+              <tbody>
+                {rows.map((row, ri) => (
+                  <tr key={ri}>
+                    {row.map((tile, ci) => {
+                      const idx = ri * cols + ci;
+                      const color = getTileColor(tile.criterion.criterionCategory);
+                      const isPair = tile.criterion.tileCount === 2 && currentSubMode === 'CANVAS';
+                      return (
+                        <td key={ci} onClick={() => handleTileTap(idx)}
+                          className={`h-20 sm:h-24 p-2 relative cursor-pointer active:scale-95 transition-all text-center align-middle border-2 shadow-sm rounded-xl ${
+                            tile.solved ? 'bg-emerald-500 border-emerald-700 text-white pointer-events-none' :
+                            tile.errorState ? 'bg-rose-500 border-rose-700 text-white animate-shake' :
+                            color
+                          }`}
+                          style={{ display: 'table-cell', borderCollapse: 'separate' }}>
+                          {isPair && !tile.solved && !tile.errorState && (
+                            <div className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-white/70 flex items-center justify-center text-[6px] font-black opacity-80 shadow-sm">½</div>
+                          )}
+                          <p className={`font-black leading-tight tracking-tight ${currentSubMode !== 'CANVAS' ? 'text-sm' : 'text-xs'}`}>
+                            {tile.criterion.label}
+                          </p>
+                        </td>
+                      );
+                    })}
+                    {/* Fill empty cells if row is not full so the layout doesn't break */}
+                    {Array.from({ length: cols - row.length }).map((_, emptyIdx) => (
+                      <td key={`empty-${emptyIdx}`} style={{ display: 'table-cell' }} className="border-2 border-transparent"></td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>

@@ -503,19 +503,22 @@ export default function CanvasComposer({
   startGame, setActiveGameMode, setIsPreviewMode,
   expandedNodes, setExpandedNodes
 }) {
-  const canvas = (canvasConfigs || []).find(c => c.id === selectedCanvasId);
+  // ── ALL HOOKS MUST COME FIRST — before any early returns ─────────────────
+  const canvas = (canvasConfigs || []).find(c => c.id === selectedCanvasId) || null;
+
+  // All table tiles for CANVAS / ODD_ONE_OUT (safe when canvas is null)
+  const allTableTiles = useMemo(() => {
+    if (!canvas) return [];
+    return (criteriaTables || []).filter(t => t.chapter === canvas.chapter)
+      .flatMap(t => (t.rows || []).filter(r => !r.isHeading)
+        .flatMap(r => (r.cells || []).flatMap(c => (c.tiles || []).flatMap(tile => [tile, ...(tile.subtiles || [])]))));
+  }, [criteriaTables, canvas?.chapter, canvas]);
+
+  // ── After all hooks — safe to early return ────────────────────────────────
   if (!canvas) return null;
 
   const type = canvas.type || 'CANVAS';
   const activeQ = canvas.questions?.find(q => q.id === activeComposerQuestionId) || canvas.questions?.[0];
-
-  // ── All table tiles for CANVAS / ODD_ONE_OUT ──────────────────────────────
-  const allTableTiles = useMemo(() =>
-    (criteriaTables || []).filter(t => t.chapter === canvas.chapter)
-      .flatMap(t => (t.rows || []).filter(r => !r.isHeading)
-        .flatMap(r => (r.cells || []).flatMap(c => (c.tiles || []).flatMap(tile => [tile, ...(tile.subtiles || [])])))),
-    [criteriaTables, canvas.chapter]
-  );
 
   // ── Auto-generate ─────────────────────────────────────────────────────────
   const autoGenerateArcadeConfig = (canvasId) => {

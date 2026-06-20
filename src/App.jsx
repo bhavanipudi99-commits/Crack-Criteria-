@@ -92,8 +92,8 @@ export default function App() {
   const [screen, setScreen] = useState('GATE');
   const [activeGameMode, setActiveGameMode] = useState('CANVAS');
   const [difficulty, setDifficulty] = useState('easy');
-  const [adminPassword, setAdminPassword] = useState('');
-  const [playerNickname, setPlayerNickname] = useState('');
+  const [adminPassword, setAdminPassword] = useState('admin123');
+  const [playerNickname, setPlayerNickname] = useState('Student');
   
   // ── Marathon State ────────────────────────────────────────────────────────
   const [marathonLives, setMarathonLives] = useState(10);
@@ -243,7 +243,7 @@ export default function App() {
       setActiveQuestionIdx(0);
       loadMarathonSlide(chapterTables);
     } else if (modeToPlay === 'CANVAS') {
-      let canvases = canvasConfigs.filter(c => c.chapter === chapterName && c.questions.some(q => q.selectedTileIds.length > 0));
+      let canvases = canvasConfigs.filter(c => c.chapter === chapterName && c.questions.some(q => q.selectedTileIds && q.selectedTileIds.length > 0));
       if (targetCanvasId) canvases = canvases.filter(c => c.id === targetCanvasId);
       if (!canvases.length) {
         alert('No playable canvases with selected tiles here yet.');

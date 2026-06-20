@@ -1,4 +1,4 @@
-# Medical Game (Crack Criteria)
+# MAMS Jigsaw - High-Precision Jigsaw Memory Arcade
 
 An interactive React-based educational game for exploring medical curriculum. Features include the Canvas Composer, Numerical questions, Odd One Out games, and a full administrative dashboard for managing criteria tables.
 
@@ -12,3 +12,4 @@ npm run dev
 
 ## Deployment
 The project is set up to deploy automatically through Vercel upon pushing to the `main` branch.
+
