@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { INITIAL_CANVAS_CONFIGS } from './data/datasets.js';
 import { playSound } from './utils/audio.js';
-import { getTileColor } from './utils/gameLogic.js';
+import { getTileColor, parseNumericalData } from './utils/gameLogic.js';
 import { useGameEngine } from './engine/useGameEngine.js';
 import { supabase } from './supabaseClient';
 import GateScreen from './components/screens/GateScreen';
