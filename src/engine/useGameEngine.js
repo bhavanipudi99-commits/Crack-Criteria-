@@ -226,7 +226,7 @@ export function useGameEngine({
     // Build the board
     const allChapterTiles = chapterTables.flatMap(table =>
       table.rows.filter(r => !r.isHeading).flatMap(row =>
-        row.cells.flatMap(cell => 
+        row.cells.flatMap((cell, cellIndex) => 
           cell.tiles.flatMap(tile => {
             const baseTile = {
               tileId: tile.id, label: tile.label, criterionId: row.id, criterionFullText: cell.text,
@@ -234,6 +234,7 @@ export function useGameEngine({
               partnerTileId: cell.tiles.length === 2 ? cell.tiles.find(t => t.id !== tile.id)?.id : null,
               tableId: table.id, tableName: table.name, parentId: null,
               diagnosis_id: selectedIds.includes(tile.id) ? question.id : `distractor_${table.id}`,
+              cellId: `${row.id}_${cellIndex}`
             };
             const items = [baseTile];
             if (tile.subtiles) {
@@ -241,6 +242,7 @@ export function useGameEngine({
                 items.push({
                   ...baseTile, tileId: sub.id, label: sub.label, parentId: tile.id,
                   diagnosis_id: selectedIds.includes(sub.id) ? question.id : `distractor_${table.id}`,
+                  cellId: `${row.id}_${cellIndex}`
                 });
               });
             }
@@ -262,10 +264,19 @@ export function useGameEngine({
     const hasSubtileTargets = targetTiles.some(t => t.parentId !== null);
     const hasMainTileTargets = targetTiles.some(t => t.parentId === null);
 
+    const targetCellIds = new Set(targetTiles.map(t => t.cellId));
+
     const distractors = allChapterTiles.filter(t => {
       // 0. Hierarchy Isolation Rule
       if (hasSubtileTargets && !hasMainTileTargets && t.parentId === null) return false;
       if (hasMainTileTargets && !hasSubtileTargets && t.parentId !== null) return false;
+
+      // 0.5 Exclude any tile that belongs to the same Cell (Column) as the targets
+      // This enforces that if Tile 1 is a target, Tile 2 and its subtiles cannot be distractors!
+      if (targetCellIds.has(t.cellId) && !targetIds.has(t.tileId)) return false;
+
+      // 0.75 Only use tiles that were selected in ANY question in this canvas
+      if (!allCanvasSelectedTileIds.has(t.tileId) && !allCanvasSelectedTileIds.has(t.parentId)) return false;
 
       // 1. Not a target tile
       if (t.diagnosis_id === question.id) return false;
@@ -417,9 +428,10 @@ export function useGameEngine({
 
   const loadOddOneOutSlide = (chapterTablesParam, configCanvas = null, qIdx = 0, marathonSubMode = null) => {
     const chapterTables = chapterTablesParam || activeChapterTables;
-    const allChapterTiles = chapterTables.flatMap(t => (t.rows||[]).filter(r => !r.isHeading).flatMap(r => (r.cells||[]).flatMap(c => (c.tiles||[]).flatMap(tile => [tile, ...(tile.subtiles||[])].map(t_obj => ({
+    const allChapterTiles = chapterTables.flatMap(t => (t.rows||[]).filter(r => !r.isHeading).flatMap(r => (r.cells||[]).flatMap((c, cellIdx) => (c.tiles||[]).flatMap(tile => [tile, ...(tile.subtiles||[])].map(t_obj => ({
       tileId: t_obj.id, label: t_obj.label, criterionId: r.id, criterionFullText: c.text,
-      criterionCategory: t.name, tableId: t.id, tableName: t.name, parentId: tile.id === t_obj.id ? null : tile.id
+      criterionCategory: t.name, tableId: t.id, tableName: t.name, parentId: tile.id === t_obj.id ? null : tile.id,
+      cellId: `${r.id}_${cellIdx}`
     }))))));
 
     let correctFitTiles = [];
@@ -460,10 +472,13 @@ export function useGameEngine({
 
       const hasSubtileTargets = correctFitTiles.some(t => t.parentId !== null);
       const hasMainTileTargets = correctFitTiles.some(t => t.parentId === null);
+      
+      const correctFitCellIds = new Set(correctFitTiles.map(t => t.cellId));
 
       const distractorPool = allChapterTiles.filter(t => {
         if (!otherQTileIds.has(t.tileId)) return false;
         if (selectedQ.selectedTileIds.includes(t.tileId)) return false;
+        if (correctFitCellIds.has(t.cellId)) return false; // Exclude cell mates!
         if (hasSubtileTargets && !hasMainTileTargets && t.parentId === null) return false;
         if (hasMainTileTargets && !hasSubtileTargets && t.parentId !== null) return false;
         return true;
@@ -471,6 +486,7 @@ export function useGameEngine({
 
       const fallbackPool = allChapterTiles.filter(t => {
         if (selectedQ.selectedTileIds.includes(t.tileId)) return false;
+        if (correctFitCellIds.has(t.cellId)) return false; // Exclude cell mates!
         if (hasSubtileTargets && !hasMainTileTargets && t.parentId === null) return false;
         if (hasMainTileTargets && !hasSubtileTargets && t.parentId !== null) return false;
         return true;
