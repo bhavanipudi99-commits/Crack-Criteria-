@@ -164,7 +164,7 @@ export function useGameEngine({
     const selectedMode = modes[Math.floor(Math.random() * modes.length)];
 
     if (selectedMode === 'NUMERICAL') {
-      const allTiles = chapterTables.flatMap(t => (t.rows||[]).flatMap(r => (r.cells||[]).flatMap(c => (c.tiles||[]).flatMap(tile => [tile, ...(tile.subtiles||[])]))));
+      const allTiles = chapterTables.flatMap(t => (t.rows||[]).filter(r => !r.isHeading).flatMap(r => (r.cells||[]).flatMap(c => (c.tiles||[]).flatMap(tile => [tile, ...(tile.subtiles||[])]))));
       const numericalTiles = allTiles.filter(t => parseNumericalData(t.label));
       if (numericalTiles.length >= 4) {
         // Pass subMode so loadNumericalSlide embeds it in activeTargetObjective
