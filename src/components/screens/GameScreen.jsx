@@ -94,14 +94,13 @@ export default function GameScreen(props) {
           <div className="flex flex-col items-center justify-start w-full h-full px-4 py-4 overflow-y-auto">
             <div className="w-full max-w-2xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pb-4">
               {boardTiles.map((tile, idx) => {
-                const color = getTileColor(tile.criterion.criterionCategory);
                 const isPair = tile.criterion.tileCount === 2;
                 return (
                   <button key={idx} onClick={() => handleTileTap(idx)}
-                    className={`relative flex items-center justify-center min-h-[4.5rem] p-4 text-center border-2 rounded-[18px] active:scale-[0.98] transition-all shadow-sm ${
-                      tile.solved ? 'bg-gradient-to-br from-emerald-400 to-emerald-500 border-emerald-600 shadow-[0_4px_0_0_#059669] text-white pointer-events-none' :
-                      tile.errorState ? 'bg-gradient-to-br from-rose-400 to-rose-500 border-rose-600 shadow-[0_4px_0_0_#e11d48] text-white animate-shake' :
-                      color
+                    className={`relative flex items-center justify-center min-h-[4.5rem] p-4 text-center border-2 rounded-[18px] active:translate-y-[6px] active:shadow-none transition-all shadow-[0_6px_0_0_#bfdbfe] hover:shadow-[0_6px_0_0_#93c5fd] border-t-4 ${
+                      tile.solved ? 'bg-gradient-to-br from-emerald-400 to-emerald-500 border-emerald-600 shadow-[0_6px_0_0_#059669] text-white pointer-events-none translate-y-[2px]' :
+                      tile.errorState ? 'bg-gradient-to-br from-rose-400 to-rose-500 border-rose-600 shadow-[0_6px_0_0_#e11d48] text-white animate-shake translate-y-[2px]' :
+                      'bg-white hover:bg-slate-50 border-blue-200 border-t-blue-400 text-slate-800'
                     }`}
                   >
                     {isPair && !tile.solved && !tile.errorState && (

@@ -534,7 +534,7 @@ export function useGameEngine({
 
   // Timer
   useEffect(() => {
-    if (screen !== 'GAME' || !gameCanvasQueueRef.current.length) return;
+    if (screen !== 'GAME' || !gameCanvasQueue.length) return;
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
       setTimeRemaining(prev => {
@@ -548,7 +548,7 @@ export function useGameEngine({
       });
     }, 1000);
     return () => clearInterval(timerRef.current);
-  }, [screen, activeCanvasIdx, activeQuestionIdx, totalTargetCount]);
+  }, [screen, activeCanvasIdx, activeQuestionIdx, totalTargetCount, gameCanvasQueue.length]);
 
   const handleTileTap = (idx) => {
     const currentSubMode = activeGameMode === 'MIXED_MARATHON' ? activeTargetObjective?.marathonSubMode : activeGameMode;
