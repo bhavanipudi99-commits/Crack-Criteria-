@@ -5,11 +5,13 @@ export default function GameScreen(props) {
     activeTargetObjective, activeGameMode, boardTiles, showLevelUp,
     marathonLevel, marathonLives, activeCanvasIdx, gameCanvasQueue,
     score, difficulty, timeRemaining, parseNumericalData, handleTileTap,
-    getTileColor, advanceToNext, setScreen, setScore, isShuffling
+    getTileColor, advanceToNext, setScreen, setScore, isShuffling,
+    activeQuestionIdx, activeCanvasConfig
   } = props;
 
   if (!activeTargetObjective) return null;
   const currentSubMode = activeGameMode === 'MIXED_MARATHON' ? activeTargetObjective.marathonSubMode : activeGameMode;
+  const isMarathon = activeGameMode === 'MARATHON' || activeGameMode === 'MIXED_MARATHON';
   const total = boardTiles.length;
   const cols = 4;
   const rows = [];
@@ -36,6 +38,9 @@ export default function GameScreen(props) {
           </span>
           <span className="text-[10px] font-black text-indigo-600 uppercase tracking-wider">
             {currentSubMode === 'CANVAS' ? `Question ${props.activeQuestionIdx + 1}/${props.activeCanvasConfig?.questions.length}` : `Round ${score.correct + 1}`}
+          </span>
+        </div>
+      </div>
       <div className="flex items-center justify-between mb-4 bg-white/60 backdrop-blur-md p-3 rounded-2xl shadow-sm border border-white/40">
         <div className="flex items-center gap-3">
           <button onClick={() => { setScreen('PLAYER_HOME'); setScore({ correct: 0, wrong: 0 }); }} className="text-xl hover:scale-110 transition-transform active:scale-95 drop-shadow-sm">🏠</button>
@@ -123,7 +128,7 @@ export default function GameScreen(props) {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center w-full h-full px-4 py-6 overflow-y-auto">
-            <div className={`w-full max-w-lg mx-auto my-auto ${currentSubMode === 'NUMERICAL' ? 'flex flex-wrap justify-center gap-4 sm:gap-6' : boardTiles.length >= 5 ? 'grid grid-cols-2 gap-3 sm:gap-4' : 'flex flex-col gap-3 sm:gap-4'}`}>
+            <div className={`w-full ${currentSubMode === 'NUMERICAL' ? 'max-w-lg' : 'max-w-2xl'} mx-auto my-auto ${currentSubMode === 'NUMERICAL' ? 'flex flex-wrap justify-center gap-4 sm:gap-6' : boardTiles.length >= 5 ? 'grid grid-cols-2 gap-3 sm:gap-4' : 'flex flex-col gap-3 sm:gap-4'}`}>
               {boardTiles.map((tile, idx) => {
                 const isNum = currentSubMode === 'NUMERICAL';
                 const isDense = !isNum && boardTiles.length >= 5;
@@ -135,7 +140,7 @@ export default function GameScreen(props) {
                 const correctStyleNum = "bg-gradient-to-br from-emerald-400 to-emerald-500 border-emerald-600 shadow-[0_6px_0_0_#059669] text-white pointer-events-none translate-y-[2px]";
                 const errorStyleNum = "bg-gradient-to-br from-rose-400 to-rose-500 border-rose-600 shadow-[0_6px_0_0_#e11d48] text-white animate-shake translate-y-[2px]";
                 
-                const idleStyleOdd = "bg-white hover:bg-slate-50 border-indigo-200 text-slate-800 shadow-[0_6px_0_0_#c7d2fe] hover:shadow-[0_6px_0_0_#a5b4fc] border-t-4 border-t-indigo-400";
+                const idleStyleOdd = "bg-white hover:bg-slate-50 border-blue-200 text-slate-800 shadow-[0_6px_0_0_#bfdbfe] hover:shadow-[0_6px_0_0_#93c5fd] border-t-4 border-t-blue-400";
                 const correctStyleOdd = "bg-gradient-to-b from-emerald-400 to-emerald-500 border-emerald-600 shadow-[0_6px_0_0_#059669] text-white pointer-events-none translate-y-[2px]";
                 const errorStyleOdd = "bg-gradient-to-b from-rose-400 to-rose-500 border-rose-600 shadow-[0_6px_0_0_#e11d48] text-white animate-shake translate-y-[2px]";
                 
@@ -151,7 +156,7 @@ export default function GameScreen(props) {
                   <button key={idx} onClick={() => handleTileTap(idx)}
                     className={`relative flex items-center justify-center transition-all ${shapeClass} ${activeClasses}`}>
                     <div className="flex flex-col items-center justify-center text-center">
-                      <span className={`font-black tracking-tight leading-tight ${isNum ? 'text-3xl sm:text-4xl' : isDense ? 'text-[13px] sm:text-sm' : 'text-base sm:text-lg'} ${tile.solved || tile.errorState ? 'text-white drop-shadow-md' : 'text-slate-800'} break-words line-clamp-4`}>
+                      <span className={`font-black tracking-tight leading-tight ${isNum ? 'text-3xl sm:text-4xl' : isDense ? 'text-[13px] sm:text-sm' : 'text-base sm:text-lg'} ${tile.solved || tile.errorState ? 'text-white drop-shadow-md' : 'text-slate-800'} break-words`}>
                         {displayText}
                       </span>
                     </div>

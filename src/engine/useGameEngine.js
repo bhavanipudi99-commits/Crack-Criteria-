@@ -421,7 +421,7 @@ export function useGameEngine({
 
     setTotalTargetCount(p => p + 1);
     setBoardTiles(board.map(c => ({ criterion: c, solved: false, errorState: false })));
-    setTimeRemaining(Math.max(5, getInitialTime() - (score.correct * 2)));
+    setTimeRemaining(getInitialTime());
     setScreen('GAME');
   };
 
@@ -521,7 +521,7 @@ export function useGameEngine({
     
     setTotalTargetCount(p => p + 1);
     setBoardTiles(board.map(c => ({ criterion: c, solved: false, errorState: false })));
-    setTimeRemaining(Math.max(5, getInitialTime() - (score.correct * 2)));
+    setTimeRemaining(getInitialTime());
     setScreen('GAME');
   };
 
@@ -548,7 +548,7 @@ export function useGameEngine({
       });
     }, 1000);
     return () => clearInterval(timerRef.current);
-  }, [screen, activeCanvasIdx, activeQuestionIdx]);
+  }, [screen, activeCanvasIdx, activeQuestionIdx, totalTargetCount]);
 
   const handleTileTap = (idx) => {
     const currentSubMode = activeGameMode === 'MIXED_MARATHON' ? activeTargetObjective?.marathonSubMode : activeGameMode;

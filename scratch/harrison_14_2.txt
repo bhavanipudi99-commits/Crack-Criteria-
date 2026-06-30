@@ -1,0 +1,490 @@
+ Infective endocarditis 
+ 
+Vegetation contains all except  
+A. Platelets  
+B. Fibrin 
+C. Microorganisms  
+D. Plenty of inflammatory cells  
+Answer. D (Harrison 21st edition 1022) 
+The prototypic lesion of infective endocarditis, the vegetation, is a mass of platelets, fibrin, microorganisms, and 
+scant inflammatory cells. Infection most commonly involves heart valves but may also occur on the low-pressure 
+side of a ventricular septal defect, on mural endocardium damaged by aberrant jets of blood or foreign bodies, or 
+on intracardiac devices themselves. The analogous process involving arteriovenous shunts, arterio-arterial shunts 
+(patent ductus arteriosus), or a coarctation of the aorta is called infective endarteritis. 
+ 
+ 
+All are true except  
+A. Risk of prosthetic valve endocarditis is greatest during 6-12 months after valve replacement  
+B. The incidence of infection involving transcatheter implanted aortic valves (TAVR PVE) per 100 patient-
+years (PY) is 1.4–2.8 in the first year and 0.8 in each of the ensuing 4 years  
+C. Endocarditis involving cardiovascular implantable electronic devices occurs in 0.5 - 1.14 cases per 
+1000 device recipients  
+D. The risk of PVE is similar for bioprosthetic valve and mechanical valve 
+Answer. D (Harrison 21st edition 1023) 
+While congenital heart diseases remain a constant predisposition, predisposing conditions in developed countries 
+have shifted from chronic rheumatic heart disease (still a common predisposition in developing countries) to illicit 
+IV drug use, degenerative valve disease, and intracardiac devices. The incidence of endocarditis is notably 
+increased among the elderly. In developed countries, 25–35% of cases of native-valve endocarditis (NVE) are 
+associated with health care, and 16–30% of all cases are prosthetic-valve infections (PVE). The risk of PVE is 
+greatest during the initial year after valve replacement; gradually declines to a low, stable rate thereafter; and is 
+greater for bioprosthetic valves than mechanical valves. The incidence of infection involving transcatheter 
+implanted aortic valves (TAVR PVE) per 100 patient-years (PY) is 1.4–2.8 in the first year and 0.8 in each of the 
+ensuing 4 years. The incidence of TAVR-PVE is similar to that for surgically implanted bioprosthetic aortic valves. IE 
+
+involving cardiovascular implantable electronic devices (CIED-IE)—greater on implanted defibrillators and 
+resynchronization devices than on permanent pacemakers—occurs in 0.5–1.14 cases per 1000 recipients 
+ 
+ 
+ 
+Health care associated native valve endocarditis most commonly caused by 
+A. Streptococcus  
+B. Staphylococcus aureus  
+C. Enterococcus  
+D. Coagulase negative staphylococcus  
+Answer. B (Harrison 21st edition 1023) 
+Health care–associated NVE, most commonly caused by Staphylococcus aureus, coagulase-negative staphylococci 
+(CoNS), and enterococci, may have either a nosocomial onset (55%) or a community onset (45%) in patients who 
+have had extensive contact with the health care system. Endocarditis complicates 8–25% of episodes of catheter-
+associated S. aureus bacteremia; the higher rates are detected in high-risk patients studied by transesophageal 
+echocardiography (TEE) 
+ 
+ 
+
+ 
+Late prosthetic valve endocarditis is 
+A. After 2 months  
+B. After 6 months  
+C. After 12 months 
+D. After 24 months  
+Answer. C (Harrison 21st edition 1023) 
+PVE arising within 2 months of valve surgery—i.e., early PVE—is generally nosocomial and is the result of 
+intraoperative contamination of the prosthesis or a bacteremic postoperative complication. This nosocomial origin 
+is reflected in the primary microbial causes: S. aureus, CoNS, facultative gram-negative bacilli, diphtheroids, and 
+fungi. The portals of entry and organisms causing cases beginning >12 months after surgery—i.e., late PVE—are 
+similar to those in community-acquired NVE. PVE due to CoNS that presents 2–12 months after surgery often 
+represents delayed-onset nosocomial infection. Regardless of the time of onset after surgery, at least 68–85% of 
+CoNS strains that cause PVE are resistant to methicillin. 
+ 
+ 
+All are true about CIED except  
+A. One third present within 3 months  
+B. One third present 4-12 months  
+C. One third present after 12 months  
+D. Commonly caused by staphylococcus aureus which is methicillin sensitive  
+Answer. D (Harrison 21st edition 1023) 
+CIED endocarditis involves the device or the endothelium at points of device contact. Occasionally, there is 
+concurrent aortic or mitral valve infection. One-third of cases of CIED endocarditis present within 3 months after 
+device implantation or manipulation, one-third present at 4–12 months, and one-third present at >1 year. S. 
+aureus and CoNS, cause the majority of cases. 
+ 
+ 
+An indolent culture negative afebrile form of endocarditis caused by  
+A. Tropheryma whipplei  
+
+B. Bartonella  
+C. Streptococcus  
+D. Pneumococcal  
+Answer. A (Harrison 21st edition 1024) 
+From 5 to 15% of patients with endocarditis have negative blood cultures; in one-third to one-half of these cases, 
+cultures are negative because of prior antibiotic exposure. The remainder of these patients are infected by 
+fastidious organisms, such as some streptococci (nutritionally variant bacteria now designated Granulicatella and 
+Abiotrophia species), HACEK organisms, Coxiella burnetii, and Bartonella species. Some fastidious organisms occur 
+in characteristic geographic settings (e.g., C. burnetii and Bartonella species in Europe, Brucella species in the 
+Middle East). Tropheryma whipplei causes an indolent, culture-negative, afebrile form of endocarditis. C. burnetii 
+has a predilection for prosthetic valves. Corynebacterium species and Propionibacterium acnes may involve 
+intracardiac devices and be slow to grow in blood cultures. Lastly, atrial myxoma, marantic endocarditis, and the 
+antiphospholipid antibody syndrome may mimic culture-negative infectious endocarditis 
+ 
+ 
+All are true except  
+A. Non bacterial thrombotic endocarditis- Thrombus on the low pressure side of cardiac structural lesion 
+B. Marantic endocarditis- uninfected vegetations seen in patients with malignancy and chronic diseases  
+C. Janeway lesions- vascular phenomenon in endocarditis  
+D. Spondylodiscitis- back pain in endocarditis  
+Answer. D (Harrison 21st edition 1024/1025) 
+The undamaged endothelium is resistant to infection by most bacteria and to thrombus formation. Endothelial 
+injury (e.g., at the site of impact of high-velocity blood jets or on the low-pressure side of a cardiac structural 
+lesion) allows either direct infection by virulent organisms or the development of a platelet–fibrin thrombus—a 
+condition called nonbacterial thrombotic endocarditis (NBTE). This thrombus serves as a site of bacterial 
+attachment during transient bacteremia. The cardiac conditions most commonly resulting in NBTE are mitral regur-
+gitation, aortic stenosis, aortic regurgitation, ventricular septal defects, and complex congenital heart disease. 
+NBTE also arises as a result of a hypercoagulable state; this phenomenon gives rise to marantic endocarditis 
+(uninfected vegetations seen in patients with malignancy and chronic diseases) and to bland vegetations 
+complicating systemic lupus erythematosus and antiphospholipid antibody syndrome. 
+The classic nonsuppurative peripheral manifestations of subacute endocarditis (e.g., Janeway lesions) are related 
+to prolonged infection; with early diagnosis and treatment, these have become infrequent. In contrast, septic 
+embolization mimicking some of these lesions (subungual hemorrhage, Osler’s nodes) is common in patients with 
+acute S. aureus endocarditis. Musculoskeletal pain usually remits promptly with treatment but must be 
+distinguished from focal metastatic infections (e.g., spondylodiscitis), which may complicate 10–15% of cases. 
+
+ 
+ 
+All are true about endocarditis except  
+A. CHF ultimately develops in 85% of patients  
+B. Heart failure due to mitral valve dysfunction progress fast than aortic valve dysfunction  
+C. Mitral peri valvular abscess rarely causes conduction disturbance  
+D. Emboli to coronary artery occurs in 2% of patients  
+Answer. B (Harrison 21st edition 1024/1025) 
+In acute endocarditis involving a normal valve, murmurs may be absent initially but ultimately are detected in 85% 
+of cases. Congestive heart failure (CHF) develops in 30–40% of patients as a consequence of valve dysfunction or, 
+occasionally, intracardiac fistulae. Heart failure due to aortic valve dysfunction progresses more rapidly than does 
+that due to mitral valve dysfunction. Extension of infection beyond valve leaflets into adjacent annular or 
+myocardial tissue results in perivalvular abscesses, which in turn may cause intracardiac fistulae with new 
+murmurs. Abscesses may burrow from the aortic valve annulus into the upper ventricular septum, where they may 
+interrupt the conduction system, leading to varying degrees of heart block. Mitral perivalvular abscesses, which are 
+usually more distant from the conduction system, only rarely cause conduction abnormalities. Emboli to a 
+coronary artery occur in 2% of patients and may result in myocardial infarction. 
+ 
+Least seen in infective endocarditis  
+A. Fever 
+B. Rheumatoid factor 
+C. Oslers nodes 
+D. Splenomegaly  
+Answer. C (Harrison 21st edition 1024) 
+Clinical and Laboratory Features of Infective Endocarditis  
+FEATURE  
+FREQUENCY, %  
+Fever  
+80–90  
+Chills and sweats  
+40–75  
+Anorexia, weight loss, malaise  
+25–50  
+
+Myalgias, arthralgias  
+15–30  
+Back pain  
+7–15  
+Heart murmur  
+80–85  
+New/worsened regurgitant murmur  
+20–50  
+Arterial emboli  
+20–50  
+Splenomegaly  
+15–50  
+Clubbing  
+10–20  
+Neurologic manifestations  
+20–40  
+Peripheral manifestations (Osler’s nodes, subungual hemorrhages, 
+Janeway lesions, Roth’s spots)  
+2–15  
+Petechiae  
+10–40  
+Laboratory manifestations  
+Anemia  
+70–90  
+Leukocytosis  
+20–30  
+Microscopic hematuria  
+30–50  
+Elevated erythrocyte sedimentation rate  
+60–90  
+Elevated C-reactive protein level  
+>90  
+Rheumatoid factor  
+50  
+Circulating immune complexes  
+65–100  
+Decreased serum complement  
+5–40  
+ 
+ 
+ 
+Independent association with increased risk of embolization in endocarditis is seen in all except  
+A. Staphylococcus aureus infection 
+B. Vegetation more than 10 mm in diameter and mobile  
+C. Infection of anterior leaflet of mitral valve 
+
+D. Prosthetic valve endocarditis  
+Answer. D (Harrison 21st edition 1025) 
+Arterial emboli, one-half of which precede the diagnosis of endocarditis, are clinically apparent in up to 
+50% of patients. Endocarditis caused by S. aureus, mobile vegetations >10 mm in diameter, and 
+infection involving the mitral valve, especially the anterior leaflet, are independently associated with an 
+increased risk of embolization. Embolic arterial occlusion causes regional pain or ischemia-induced organ 
+dysfunction (e.g., of the kidney, spleen, bowel, extremity). Cerebrovascular emboli presenting as strokes 
+or occasionally as encephalopathy complicate 15–35% of cases of endocarditis; however, evidence of 
+clinically asymptomatic emboli is found on MRI in 30–65% of patients with left-sided endocarditis. The 
+frequency of stroke is 8 per 1000 patient-days during the week prior to diagnosis; the subsequent fall in 
+frequency—to 4.8 and 1.7 per 1000 patient-days during the first and second weeks of effective anti-
+microbial therapy, respectively—is unrelated to change in vegetation size. Only 3% of strokes occur after 
+1 week of effective therapy. Emboli occurring late during or after effective therapy do not in themselves 
+constitute evidence of failed antimicrobial treatment. 
+ 
+ 
+All are complications of endocarditis except  
+A. Mycotic aneurysms  
+B. Hypocomplementemic glomerulonephritis  
+C. Prosthetic valve partial dehiscence  
+D. SSPE 
+Answer. D (Harrison 21st edition 1025) 
+Neurologic complications include aseptic or purulent meningitis, intracranial hemorrhage due to hemorrhagic 
+infarcts or ruptured mycotic aneurysms, and seizures. (Mycotic aneurysms are focal dilations of arteries occurring 
+at points in the artery wall that have been weakened by infection in the vasa vasorum or where septic emboli have 
+lodged.) Microabscesses in brain and meninges occur commonly in S. aureus endocarditis; surgically drainable 
+intracerebral abscesses are infrequent.  
+Immune complex deposition on the glomerular basement membrane causes diffuse hypoco mplementemic 
+glomerulonephritis and renal dysfunction, which typically improve with effective antimicrobial therapy. Embolic 
+renal infarcts cause flank pain and hematuria but rarely cause renal dysfunction. 
+ 
+ 
+All are minor criteria for infective endocarditis except  
+
+A. Predisposing heart condition  
+B. New valvular regurgitation  
+C. Glomerulonephritis 
+D. Intracranial haemorrhage  
+Answer. B (Harrison 21st edition 1026) 
+The Modified Duke Criteria for the Clinical Diagnosis of Infective Endocarditis  a  
+Major Criteria  
+1. Positive blood culture  
+Typical microorganism for infective endocarditis from two separate blood cultures  
+Viridans streptococci, Streptococcus gallolyticus, HACEK group organisms, Staphylococcus aureus, or  
+Community-acquired enterococci in the absence of a primary focus,  
+or  
+Persistently positive blood culture, defined as recovery of a microorganism consistent with infective 
+endocarditis from:  
+Blood cultures drawn >12 h apart; or  
+All of 3 or a majority of ≥4 separate blood cultures, with first and last drawn at least 1 h apart  
+or  
+Single positive blood culture for Coxiella burnetii or phase I IgG antibody titer of >1:800  
+2. Evidence of endocardial involvement  
+Positive echocardiogram  b  
+Oscillating intracardiac mass on valve or supporting structures or in the path of regurgitant jets or in 
+implanted material, in the absence of an alternative anatomic explanation, or  
+Abscess, or  
+New partial dehiscence of prosthetic valve,  
+or  
+New valvular regurgitation (increase or change in preexisting murmur not sufficient)  
+Minor Criteria  
+
+1. Predisposition: predisposing heart conditions  c or injection drug use  
+2. Fever ≥38.0°C (≥100.4°F)  
+3. Vascular phenomena: major arterial emboli, septic pulmonary infarcts, mycotic aneurysm, intracranial 
+hemorrhage, conjunctival hemorrhages, Janeway lesions  
+4. Immunologic phenomena: glomerulonephritis, Osler’s nodes, Roth’s spots, rheumatoid factor  
+5. Microbiologic evidence: positive blood culture but not meeting major criterion, as noted previously, d or 
+serologic evidence of active infection with an organism consistent with infective endocarditis  
+a-Definite endocarditis is defined by documentation of two major criteria, of one major criterion and three 
+minor criteria, or of five minor criteria. See text for further details. B-Transesophageal echocardiography is 
+required for optimal assessment of possible prosthetic valve endocarditis or complicated endocarditis. C-
+Valvular disease with stenosis or regurgitation, presence of a prosthetic valve, congenital heart disease 
+including corrected or partially corrected conditions (except isolated atrial septal defect, repaired ventricular 
+septal defect, or closed patent ductus arteriosus), prior endocarditis, or hypertrophic cardiomyopathy. D-
+Excluding single positive cultures for coagulase-negative staphylococci and diphtheroids, which are common 
+culture contaminants, or for organisms that do not cause endocarditis frequently, such as gram-negative 
+bacilli.  
+ 
+- 
+Documentation of two major criteria, of one major criterion and three minor criteria, or of five minor 
+criteria allows a clinical diagnosis of definite endocarditis. The diagnosis of endocarditis is rejected if an 
+alternative diagnosis is established, if symptoms resolve and do not recur with ≤4 days of antibiotic 
+therapy, or if surgery or autopsy after ≤4 days of antimicrobial therapy yields no histologic evidence of 
+endocarditis. Illnesses not classified as definite endocarditis or rejected as such are considered cases of 
+possible infective endocarditis when either one major and one minor criterion or three minor criteria are 
+fulfilled. 
+ 
+ 
+All are true except 
+A. TTE detects vegetations more than 2mm in diameter 
+B. TTE detects vegetations in 65–80% of patients with definite clinical endocarditis 
+C. TEE is safe and detects vegetations in >90% of patients with definite endocarditis 
+D. Negative TEE result excludes diagnosis of infective endocarditis 
+Answer. D (Harrison 21st edition 1026) 
+
+Echocardiography anatomically confirms and measures vegetations, detects intracardiac complications, and 
+assesses cardiac function. Transthoracic echocardiography (TTE) is exceptionally specific; however, in 20% of 
+patients the images are inadequate. TTE fails to detect vegetations in 20–35% of patients with definite clinical IE, 
+missing vegetations <2 mm in diameter. It is not optimal for evaluating prosthetic valves, especially TAVR with 
+large stents, or detecting intracardiac complications. TEE detects vegetations in >90% of patients with definite IE; 
+nevertheless, initial studies may yield false-negative results in 6–18% of IE patients, especially in TAVR-PVE. A 
+negative TEE, when IE is likely, does not exclude the diagnosis but rather warrants repeating the study in 7–10 
+days. TEE is sometimes augmented by 3-D TEE for the diagnosis of PVE and CIED-IE and for the detection of 
+myocardial abscess, fistulae, or valve perforations 
+ 
+ 
+All are true about treatment of enteroccal IE except 
+A. Enterococci are killed by the cell wall active agents penicillin, ampicillin, teicoplanin, and vancomycin 
+B. Enterococci are resistant to oxacillin, nafcillin, and the cephalosporins  
+C. Enterococci are killed by the synergistic interaction of these cell wall–active antibiotics combined with 
+gentamicin  
+D. Bactericidal synergy with tobramycin, netilmicin, kanamycin, and amikacin—is unpredictable even in 
+the absence of high-level resistance 
+Answer. A (Harrison 21st edition 1028) 
+Enterococci are resistant to oxacillin, nafcillin, and the cephalosporins and are only inhibited—not killed—by the 
+cell wall–active agents penicillin, ampicillin, teicoplanin (not available in the United States), and vancomycin. 
+Enterococci are killed by the synergistic interaction of these cell wall–active antibiotics combined with gentamicin, 
+unless the isolate exhibits high-level resistance to gentamicin, defined as growth of the isolate in the presence of 
+gentamicin at ≥500 μg/mL. Bactericidal synergy with other aminoglycosides—tobramycin, netilmicin, kanamycin, 
+and amikacin—is unpredictable even in the absence of high-level resistance; thus, they are not used to treat 
+enterococcal IE. 
+ 
+The regimens used to treat staphylococcal endocarditis are based on all except 
+A. Presence or absence of a prosthetic valve or foreign device 
+B. Native valve(s) involved (right vs left side) 
+C. Susceptibility of the isolate  
+D. Coagulase production 
+Answer. D (Harrison 21st edition 1028) 
+
+The regimens used to treat staphylococcal endocarditis are based not on coagulase production but rather on the 
+presence or absence of a prosthetic valve or foreign device, the native valve(s) involved (right vs left side), and the 
+susceptibility of the isolate  
+ 
+ 
+All are used for NVE by staph.aureus routinely except 
+A. Oxacillin 
+B. Cefazolin 
+C. Vancomycin 
+D. Gentamycin 
+Answer. D (Harrison 21st edition 1028) 
+The addition of gentamicin to a β-lactam antibiotic or vancomycin to enhance therapy for left-sided NVE has not 
+improved survival rates and is associated with nephrotoxicity. Most guidelines do not recommend the routine 
+addition of gentamicin, fusidic acid, or rifampin to regimens for S. aureus NVE. 
+ 
+Empirical treatment of blood culture negative infective endocarditis  
+A. Gentamycin + Vancomycin 
+B. Vancomycin + Ceftriaxone 
+C. Vancomycin + rifampin 
+D. Gentamycin + Ceftriaxone 
+Answer B (Harrison 21st edition 1030) 
+In the treatment of blood culture–negative episodes, marantic endocarditis and the antiphospholipid antibody 
+syndrome must be considered. Fastidious organisms should be investigated by serologic testing. In the absence of 
+prior antibiotic therapy, it is unlikely that infection due to S. aureus, CoNS, enterococci, or Enterobacteriaceae will 
+present with negative blood cultures; thus, in this situation, recommended empirical therapy targets not these 
+organisms but rather fastidious streptococci, nutritionally variant organisms, the HACEK group, and Bartonella 
+species. Pending the availability of diagnostic data, blood culture–negative subacute NVE is treated with 
+vancomycin plus ampicillin-sulbactam (12 g every 24 h) or ceftriaxone; doxycycline (100 mg twice daily) is added 
+for enhanced Bartonella coverage. If cultures are negative because of prior antibiotic administration, pathogens 
+that are likely to be inhibited by the specific prior therapy should be considered. 
+ 
+
+All are true except 
+A. A 4- to 6-week course of endocarditis-targeted therapy is recommended for patients with CIED 
+endocarditis 
+B. A 4- to 6-week course of endocarditis-targeted therapy is recommended for those with bacteremia 
+that continues during ongoing antimicrobial therapy after device removal 
+C. Generator pocket infection without bacteremia is treated with a 10- to 14-day course, all to be given 
+injectable 
+D. S. aureus bacteremia (and persistent CoNS bacteremia) in patients with a CIED is likely to be indicative 
+of CIED 
+Answer. C (Harrison 21st edition 1030/1031) 
+Bacteremic CIED infection may be complicated by coincident left-sided NVE, PVE, or remote-site infection (e.g., 
+osteomyelitis) and may require modification of antimicrobial therapy. A 4- to 6-week course of endocarditis-
+targeted therapy is recommended for patients with CIED endocarditis and for those with bacteremia that 
+continues during ongoing antimicrobial therapy after device removal. Generator pocket infection without 
+bacteremia is treated with a 10- to 14-day course, some of which can be given orally. In the absence of another 
+source, S. aureus bacteremia (and persistent CoNS bacteremia) in patients with a CIED is likely to be indicative of 
+CIED or valvular endocarditis and should be managed accordingly. However, not all bloodstream infections in these 
+patients indicate endocarditis 
+ 
+All are true about anticoagulant use in infective endocarditis except 
+A. Anticoagulants reduce the risk of embolization of vegetation 
+B. If no contraindication is there anticoagulation can be given in AF if CHADS2 core is more than 2 
+C. LMWH is preferred for anticoagulation 
+D. Anticoagulation should be reversed if stroke occurs 
+Answer. A (Harrison 21st edition 1031) 
+Neither anticoagulant nor antiplatelet therapy reduces the risk of emboli in patients with NVE, and thus 
+such treatment is not indicated for that purpose. However, patients with infective endocarditis may 
+have coexisting conditions wherein anticoagulation is indicated. Thus, in the absence of a con-
+traindication (i.e., no clinical or imaging evidence of a recent large embolic stroke, intracerebral 
+hemorrhage, or mycotic aneurysm), anticoagulant therapy is given to patients who have a mechanical 
+prosthetic valve, atrial fibrillation with either mitral stenosis or a CHADS2 score ≥2, or deep-vein 
+thrombophlebitis. Most experts prefer to use unfractionated or low-molecular-weight heparin for ease 
+
+of reversal. Anticoagulant therapy should be reversed, at least temporarily, in most patients who have 
+had an acute ischemic stroke or an intracerebral hemorrhage. 
+ 
+ 
+ 
+Surgery to Be Strongly Considered for Improved Outcome in infective endocarditis in all of the following 
+except 
+A. Very large (>10-mm) vegetation 
+B. Persistent unexplained fever (≥10 days) in blood culture–negative endocarditis 
+C. Poorly responsive or relapsed endocarditis due to highly antibiotic-resistant enterococci or gram-
+negative bacilli 
+D. Relapse after optimal antimicrobial therapy in prosthetic-valve endocarditis 
+Answer. A (Harrison 21st edition 1031) 
+Indications for Cardiac Surgical Treatment in Patients with Endocarditis  
+Surgery Required for Optimal Outcome  
+Native-valve or prosthetic-valve endocarditis  
+Moderate or severe congestive heart failure or shock due to valve dysfunction  
+Perivalvular extension of infection with abscess, fistula, or heart block  
+Persistent bacteremia without an extracardiac cause despite 7–10 days of optimal antimicrobial therapy  
+Lack of effective antimicrobial therapy (e.g., fungal, Brucella, multidrug-resistant gram-negative bacillary 
+endocarditis)  
+Prosthetic-valve endocarditis  
+Partially dehisced unstable prosthetic valve  
+Surgery to Be Strongly Considered for Improved Outcome a  
+Prosthetic-valve endocarditis  
+- 
+S. aureus infection with intracardiac complications  
+- 
+Relapse after optimal antimicrobial therapy  
+
+Native-valve endocarditis  
+- 
+Large (>10-mm) hypermobile vegetation, particularly with prior systemic embolus and significant 
+valve dysfunction b  
+- 
+Very large (>30-mm) vegetation  
+- 
+Persistent unexplained fever (≥10 days) in blood culture–negative endocarditis  
+- 
+Poorly responsive or relapsed endocarditis due to highly antibiotic-resistant enterococci or gram-
+negative bacilli  
+a-Carefully consider surgery. Multiple findings are often combined to justify surgery. B-In the group with 
+an estimated low cardiac-surgery mortality risk.  
+ 
+ 
+All are used for prophylaxis of Endocarditis except 
+A. Amoxicillin 
+B. Doxycycline 
+C. Clarithromycin 
+D. Clindamycin 
+Answer. D (Harrison 21st edition 1033) 
+Antibiotic Regimens for Prophylaxis of Endocarditis in Adults with High-Risk Cardiac Lesions 
+A. Standard oral regimen  
+Amoxicillin: 2 g PO 1 h before procedure  
+B. Inability to take oral medication  
+Ampicillin: 2 g IV or IM within 1 h before procedure  
+C. Penicillin allergy  
+1. Clarithromycin or azithromycin: 500 mg PO 1 h before procedure  
+2. Cephalexinc: 2 g PO 1 h before procedure  
+3. Doxycycline: 100 mg PO 1 h before procedure 
+D. Penicillin allergy, inability to take oral medication  
+
+Cefazolinc or ceftriaxonec: 1 g IV or IM 30 min before procedure  
+ 
+ 
+ 
+Emergency cardiac surgery is advised in infective endocarditis in 
+A. Valve obstruction by vegetation 
+B. Acute aortic or mitral regurgitation with heart failure 
+C. Sinus of Valsalva abscess ruptured into right heart 
+D. Fungal (mold) endocarditis 
+Answer. C (Harrison 21st edition 1032) 
+ 
+ 
+ 
+High-risk cardiac lesions for which endocarditis prophylaxis is advised before dental procedures include 
+all except 
+A. Prosthetic heart valves 
+B. Completely repaired congenital heart defects during the 6 months after repair 
+C. Valvulopathy developing after cardiac transplantation 
+
+D. Rheumatic mitral stenosis 
+Answer. D (Harrison 21st edition 1034) 
+High-Risk Cardiac Lesions for Which Endocarditis Prophylaxis Is Advised Before Dental Procedures  
+Prosthetic heart valves  
+Prior endocarditis  
+Unrepaired cyanotic congenital heart disease, including palliative shunts or conduits  
+Completely repaired congenital heart defects during the 6 months after repair  
+Incompletely repaired congenital heart disease with residual defects adjacent to prosthetic material  
+Valvulopathy developing after cardiac transplantation 
+ 
+ 
+ 
+ 
+ 
+

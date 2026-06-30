@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import CanvasComposer from './CanvasComposer';
+import CurriculumSidebar from '../admin/CurriculumSidebar';
 
 const uid = (prefix) => `${prefix}_${Math.random().toString(36).substr(2, 9)}`;
 
@@ -20,12 +21,7 @@ export default function AdminDashboard({
   expandedNodes, setExpandedNodes
 }) {
 
-  // ── Curriculum creation forms ──────────────────────────────────────────────
-  const [newSubjectInput, setNewSubjectInput] = useState('');
-  const [newChapterInput, setNewChapterInput] = useState('');
-  const [newChapterSubject, setNewChapterSubject] = useState('Medicine');
-  const [newSubChapterName, setNewSubChapterName] = useState('');
-  const [newSubChapterParent, setNewSubChapterParent] = useState('');
+  // ── Curriculum creation forms (for tables/canvases) ──────────────────────
   const [newTableName, setNewTableName] = useState('');
   const [newTableChapter, setNewTableChapter] = useState('Cardiology');
   const [newCanvasName, setNewCanvasName] = useState('');
@@ -86,45 +82,7 @@ export default function AdminDashboard({
     if (window.confirm('Delete this configuration?')) setCanvasConfigs(p => p.filter(c => c.id !== id));
   };
 
-  const addSubject = () => {
-    const n = newSubjectInput.trim();
-    if (n && !appSubjects.includes(n)) { setAppSubjects(p => [...p, n]); setNewSubjectInput(''); }
-    else alert('Subject empty or exists.');
-  };
 
-  const addChapter = () => {
-    const n = newChapterInput.trim();
-    const subj = newChapterSubject.trim() || 'General';
-    if (n && !appChapters.some(c => c.name === n)) {
-      setAppChapters(p => [...p, { id: uid('ch'), name: n, subject: subj }]);
-      setAppSubjects(p => p.includes(subj) ? p : [...p, subj]);
-      setNewChapterInput('');
-    } else alert('Chapter empty or exists.');
-  };
-
-  const deleteChapter = (id, name) => {
-    if (window.confirm(`Delete "${name}" and all its tables/canvases?`)) {
-      setAppChapters(p => p.filter(c => c.id !== id));
-      setCriteriaTables(p => p.filter(t => t.chapter !== name));
-      setCanvasConfigs(p => p.filter(c => c.chapter !== name));
-    }
-  };
-
-  const addSubChapter = (chapName) => {
-    const n = newSubChapterName.trim();
-    if (!n) { alert('Enter a sub-chapter name.'); return; }
-    const id = uid('sc');
-    setAppSubChapters(p => [...p, { id, name: n, chapterName: chapName }]);
-    setNewSubChapterName('');
-    setNewSubChapterParent('');
-  };
-
-  const deleteSubChapter = (scId, chapName) => {
-    if (!window.confirm('Delete this sub-chapter and all its tables/canvases?')) return;
-    setAppSubChapters(p => p.filter(sc => sc.id !== scId));
-    setCriteriaTables(p => p.filter(t => t.subChapterId !== scId));
-    setCanvasConfigs(p => p.filter(c => c.subChapterId !== scId));
-  };
 
   const exportDatabase = () => {
     const data = { appSubjects, appChapters, appSubChapters, criteriaTables, canvasConfigs };
@@ -158,7 +116,7 @@ export default function AdminDashboard({
     e.target.value = null;
   };
 
-  const allSubjects = Array.from(new Set([...appSubjects, ...appChapters.map(c => c.subject)]));
+
 
   const renderItems = (chapName, subChapId = null) => {
     const tables = criteriaTables.filter(t => t.chapter === chapName && (t.subChapterId || null) === subChapId);
@@ -275,140 +233,18 @@ export default function AdminDashboard({
 
       <div className="flex-1 flex overflow-hidden">
         {/* LEFT PANEL: Curriculum Index */}
-        <div className={`flex flex-col bg-white border-r border-slate-200 overflow-y-auto transition-all duration-300 ${selectedCanvasId ? 'w-[340px] flex-shrink-0' : 'w-full'}`}>
-          <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">📑 Curriculum Index</p>
-            <div className="flex gap-2">
-              <button onClick={exportDatabase} className="text-[9px] font-black text-indigo-600 border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded uppercase transition-colors">Export</button>
-              <label className="text-[9px] font-black text-slate-600 border border-slate-200 bg-white hover:bg-slate-50 px-2 py-1 rounded uppercase transition-colors cursor-pointer">
-                Import<input type="file" accept=".json" onChange={importDatabase} className="hidden" />
-              </label>
-            </div>
-          </div>
-          <div className="p-3 space-y-3">
-
-            {/* Add Subject */}
-            <div className="flex gap-2 items-center bg-slate-50 border border-slate-200 rounded-xl p-2">
-              <span className="text-slate-400 text-base">📚</span>
-              <input type="text" placeholder="New Subject name..." value={newSubjectInput}
-                onChange={e => setNewSubjectInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && addSubject()}
-                className="flex-1 px-2 py-1 text-xs font-bold text-slate-800 bg-transparent focus:outline-none placeholder-slate-400" />
-              <button onClick={addSubject} className="text-[9px] font-black text-white bg-indigo-500 hover:bg-indigo-600 px-3 py-1.5 rounded-lg uppercase shadow-sm transition-all">Add</button>
-            </div>
-
-            {/* Tree View */}
-            <div className="space-y-2">
-              {allSubjects.map(sub => {
-                const subChapters = appChapters.filter(c => c.subject === sub);
-                const isSubExpanded = expandedChapters[`sub_${sub}`] !== false;
-                const subTableCount = criteriaTables.filter(t => subChapters.some(c => c.name === t.chapter)).length;
-                const subCanvasCount = canvasConfigs.filter(cv => subChapters.some(c => c.name === cv.chapter)).length;
-
-                return (
-                  <div key={sub} className="rounded-xl border border-indigo-100 overflow-hidden shadow-sm">
-                    <button onClick={() => setExpandedChapters(p => ({ ...p, [`sub_${sub}`]: !isSubExpanded }))}
-                      className="w-full px-3 py-2.5 bg-indigo-600 hover:bg-indigo-700 flex justify-between items-center transition-colors">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">📚</span>
-                        <h1 className="text-sm font-black text-white tracking-tight">{sub}</h1>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[9px] font-bold text-indigo-200 bg-indigo-800/40 px-2 py-0.5 rounded-full">{subChapters.length} ch · {subTableCount}t · {subCanvasCount}g</span>
-                        <span className={`text-indigo-200 text-xs transition-transform duration-300 ${isSubExpanded ? 'rotate-90' : ''}`}>▶</span>
-                      </div>
-                    </button>
-                    
-                    {isSubExpanded && (
-                      <div className="p-2 bg-slate-50/50 space-y-1">
-                        {subChapters.map(chap => {
-                          const chapSubChaps = appSubChapters.filter(sc => sc.chapterName === chap.name);
-                          const isChapExpanded = expandedChapters[`chap_${chap.id}`] !== false;
-                          const chapTableCount = criteriaTables.filter(t => t.chapter === chap.name).length;
-                          const chapCanvasCount = canvasConfigs.filter(cv => cv.chapter === chap.name).length;
-                          return (
-                            <div key={chap.id} className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
-                              <button onClick={() => setExpandedChapters(p => ({ ...p, [`chap_${chap.id}`]: !isChapExpanded }))}
-                                className="w-full px-3 py-2 flex justify-between items-center hover:bg-slate-50 transition-colors">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-slate-400 text-sm">📖</span>
-                                  <h2 className="text-xs font-bold text-slate-800">{chap.name}</h2>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-full">{chapTableCount}t · {chapCanvasCount}g</span>
-                                  <span onClick={(e) => { e.stopPropagation(); deleteChapter(chap.id, chap.name); }} className="text-[9px] font-bold text-rose-400 hover:text-rose-600 uppercase px-1.5 py-0.5 bg-rose-50 hover:bg-rose-100 rounded transition-colors">Del</span>
-                                  <span className={`text-slate-400 font-bold text-[10px] transition-transform duration-300 ${isChapExpanded ? 'rotate-90' : ''}`}>▶</span>
-                                </div>
-                              </button>
-
-                              {isChapExpanded && (
-                                <div className="bg-slate-50/30">
-                                  {/* Root Chapter Items */}
-                                  <div className="p-2">{renderItems(chap.name, null)}</div>
-
-                                  {/* Sub-chapters */}
-                                  {chapSubChaps.length > 0 && (
-                                    <div className="px-2 pb-2 space-y-1">
-                                      {chapSubChaps.map(sc => {
-                                        const isScExpanded = expandedChapters[`subchap_${sc.id}`];
-                                        const scTableCount = criteriaTables.filter(t => t.subChapterId === sc.id).length;
-                                        const scCanvasCount = canvasConfigs.filter(cv => cv.subChapterId === sc.id).length;
-                                        return (
-                                          <div key={sc.id} className="bg-white border border-slate-200 rounded-lg overflow-hidden">
-                                            <button onClick={() => setExpandedChapters(p => ({ ...p, [`subchap_${sc.id}`]: !isScExpanded }))}
-                                              className="w-full px-3 py-2 flex items-center justify-between hover:bg-slate-50 transition-colors">
-                                              <div className="flex items-center gap-1.5">
-                                                <span className="text-slate-300 text-xs border-l-2 border-slate-200 pl-1.5">📂</span>
-                                                <span className="text-xs font-bold text-slate-600">{sc.name}</span>
-                                                <span className="text-[9px] font-bold text-slate-300 bg-slate-100 px-1.5 py-0.5 rounded-full">{scTableCount}t · {scCanvasCount}g</span>
-                                              </div>
-                                              <div className="flex items-center gap-1.5">
-                                                <span onClick={(e) => { e.stopPropagation(); deleteSubChapter(sc.id, chap.name); }} className="text-[9px] font-bold text-rose-400 hover:text-rose-600 uppercase px-1.5 py-0.5 bg-rose-50 hover:bg-rose-100 rounded transition-colors">Del</span>
-                                                <span className={`text-slate-400 font-bold text-[10px] transition-transform duration-300 ${isScExpanded ? 'rotate-90' : ''}`}>▶</span>
-                                              </div>
-                                            </button>
-                                            {isScExpanded && (
-                                              <div className="p-2 bg-slate-50/30 border-t border-slate-100">
-                                                {renderItems(chap.name, sc.id)}
-                                              </div>
-                                            )}
-                                          </div>
-                                        );
-                                      })}
-                                    </div>
-                                  )}
-                                  
-                                  {/* Add Sub-chapter */}
-                                  <div className="mx-2 mb-2 flex gap-2 items-center bg-white p-1.5 rounded-lg border border-slate-200">
-                                    <span className="text-slate-300 text-xs border-l-2 border-slate-200 pl-1.5">📂</span>
-                                    <input type="text" placeholder="+ New Sub-chapter..." value={newSubChapterParent === chap.name ? newSubChapterName : ''}
-                                      onChange={e => { setNewSubChapterName(e.target.value); setNewSubChapterParent(chap.name); }}
-                                      onClick={() => setNewSubChapterParent(chap.name)}
-                                      className="flex-1 text-xs font-bold placeholder-slate-400 border-none focus:outline-none focus:ring-0 bg-transparent" />
-                                    <button onClick={() => addSubChapter(chap.name)} className="text-[9px] font-black text-white bg-slate-600 hover:bg-slate-700 px-2.5 py-1 rounded uppercase transition-colors">Add</button>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-
-                        {/* Add Chapter to Subject */}
-                        <div className="flex gap-2 items-center bg-slate-50 border border-slate-200 rounded-lg p-1.5 mt-1">
-                          <span className="text-slate-400 text-sm">📖</span>
-                          <input type="text" placeholder={`+ Chapter in ${sub}...`} value={newChapterSubject === sub ? newChapterInput : ''}
-                            onChange={e => { setNewChapterInput(e.target.value); setNewChapterSubject(sub); }}
-                            onClick={() => setNewChapterSubject(sub)}
-                            className="flex-1 text-xs font-bold placeholder-slate-400 border-none focus:outline-none focus:ring-0 bg-transparent" />
-                          <button onClick={addChapter} className="text-[9px] font-black text-white bg-indigo-500 hover:bg-indigo-600 px-2.5 py-1 rounded uppercase transition-colors">Add</button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+        <div className={`transition-all duration-300 ${selectedCanvasId ? 'w-[340px] flex-shrink-0' : 'w-full'} flex`}>
+          <CurriculumSidebar
+            appSubjects={appSubjects} setAppSubjects={setAppSubjects}
+            appChapters={appChapters} setAppChapters={setAppChapters}
+            appSubChapters={appSubChapters} setAppSubChapters={setAppSubChapters}
+            expandedChapters={expandedChapters} setExpandedChapters={setExpandedChapters}
+            criteriaTables={criteriaTables} setCriteriaTables={setCriteriaTables}
+            canvasConfigs={canvasConfigs} setCanvasConfigs={setCanvasConfigs}
+            renderItems={renderItems}
+            onExport={exportDatabase}
+            onImport={importDatabase}
+          />
         </div>
         {/* RIGHT PANEL: Canvas Composer or Placeholder */}
         {selectedCanvasId ? (

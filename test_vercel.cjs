@@ -7,6 +7,6 @@ const { chromium } = require('playwright');
   page.on('console', msg => console.log('CONSOLE LOG:', msg.text()));
   page.on('pageerror', err => console.log('PAGE ERROR:', err.message));
   
-  await page.goto('https://crack-criteria.vercel.app', { waitUntil: 'networkidle' });
+  await page.goto('http://localhost:4173', { waitUntil: 'networkidle' });
   await browser.close();
 })();

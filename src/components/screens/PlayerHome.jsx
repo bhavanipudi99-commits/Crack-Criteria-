@@ -196,7 +196,7 @@ export default function PlayerHome(props) {
           </div>
         </div>
       </div>
-      <button onClick={() => adminPassword === 'admin123' ? setScreen('ADMIN_HOME') : setScreen('GATE')} className="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 font-extrabold py-3.5 rounded-xl text-xs uppercase tracking-wider">
+      <button onClick={() => adminPassword === 'admin123' ? (window.location.href = '/admin') : setScreen('GATE')} className="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 font-extrabold py-3.5 rounded-xl text-xs uppercase tracking-wider">
         {adminPassword === 'admin123' ? 'Back to Admin Dashboard' : 'Sign Out'}
       </button>
     </div>
