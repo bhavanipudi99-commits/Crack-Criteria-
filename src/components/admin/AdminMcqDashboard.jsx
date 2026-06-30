@@ -2,20 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
-import CurriculumSidebar from './CurriculumSidebar';
+import McqSidebar from './McqSidebar';
 
-export default function AdminMcqDashboard({
-  appSubjects = [],
-  setAppSubjects = () => {},
-  appChapters = [],
-  setAppChapters = () => {},
-  appSubChapters = [],
-  expandedChapters = {},
-  setExpandedChapters = () => {}
-}) {
+export default function AdminMcqDashboard() {
   const [mcqs, setMcqs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [errorReports, setErrorReports] = useState([]);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   
   // Selection State
   const [selectedSubject, setSelectedSubject] = useState(null);
@@ -66,17 +59,12 @@ export default function AdminMcqDashboard({
   const fetchMcqs = async () => {
     try {
       setLoading(true);
+      const dbChapStr = selectedSubChapter ? `${selectedChapter}|||${selectedSubChapter}` : selectedChapter;
+      
       let query = supabase.from('mcqs').select('*')
         .eq('subject', selectedSubject)
-        .eq('chapter', selectedChapter);
-      
-      if (selectedSubChapter) {
-        query = query.eq('subchapter_id', selectedSubChapter);
-      } else {
-        query = query.is('subchapter_id', null);
-      }
-      
-      query = query.order('created_at', { ascending: false });
+        .eq('chapter', dbChapStr)
+        .order('created_at', { ascending: false });
 
       const { data, error } = await query;
       if (error) throw error;
@@ -95,6 +83,7 @@ export default function AdminMcqDashboard({
       const { error } = await supabase.from('mcqs').delete().eq('id', id);
       if (error) throw error;
       setMcqs(p => p.filter(q => q.id !== id));
+      setRefreshTrigger(p => p + 1);
     } catch (err) {
       alert(`Error deleting: ${err.message}`);
     }
@@ -149,6 +138,7 @@ export default function AdminMcqDashboard({
       }
       setIsEditing(false);
       setCurrentMcq(null);
+      setRefreshTrigger(p => p + 1);
     } catch (err) {
       alert(`Error saving: ${err.message}`);
     } finally {
@@ -224,7 +214,7 @@ export default function AdminMcqDashboard({
     if (markdownPreview.length === 0) return;
     setIsUploadingMD(true);
     
-    const dbChapter = selectedSubChapter ? `${selectedChapter}|||${appSubChapters.find(sc => sc.id === selectedSubChapter)?.name}` : selectedChapter;
+    const dbChapter = selectedSubChapter ? `${selectedChapter}|||${selectedSubChapter}` : selectedChapter;
     
     const payload = markdownPreview.map(q => ({
       subject: selectedSubject,
@@ -243,6 +233,7 @@ export default function AdminMcqDashboard({
       setMarkdownPreview([]);
       setIsMarkdownModalOpen(false);
       fetchMcqs();
+      setRefreshTrigger(p => p + 1);
     } catch (err) {
       alert(`Upload failed: ${err.message}`);
     }
@@ -274,17 +265,11 @@ export default function AdminMcqDashboard({
       <div className="flex-1 flex overflow-hidden">
         {/* LEFT PANEL: Curriculum Index */}
         <div className="flex">
-          <CurriculumSidebar
-            appSubjects={appSubjects}
-            setAppSubjects={setAppSubjects}
-            appChapters={appChapters}
-            setAppChapters={setAppChapters}
-            appSubChapters={appSubChapters}
-            expandedChapters={expandedChapters}
-            setExpandedChapters={setExpandedChapters}
+          <McqSidebar
             onSelectFolder={handleSelectFolder}
             selectedChapter={selectedChapter}
             selectedSubChapter={selectedSubChapter}
+            refreshTrigger={refreshTrigger}
           />
         </div>
 
@@ -296,7 +281,7 @@ export default function AdminMcqDashboard({
               <div>
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{selectedSubject} &gt; {selectedChapter}</p>
                 <h3 className="text-xl font-black text-slate-800">
-                  {selectedSubChapter ? appSubChapters.find(sc => sc.id === selectedSubChapter)?.name : 'Root MCQs'}
+                  {selectedSubChapter ? selectedSubChapter : 'Root MCQs'}
                 </h3>
               </div>
               <div className="flex gap-2">
