@@ -174,7 +174,7 @@ export default function AdminApp() {
             </div>
           )}
           
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 flex flex-col overflow-hidden">
             {adminTab === 'CANVAS' ? (
               <AdminDashboard 
                 appSubjects={appSubjects} setAppSubjects={setAppSubjects}

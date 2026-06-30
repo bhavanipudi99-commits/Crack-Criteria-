@@ -264,7 +264,7 @@ export default function AdminMcqDashboard() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-slate-50 overflow-hidden text-slate-900 font-sans">
+    <div className="flex-1 w-full flex flex-col bg-slate-50 overflow-hidden text-slate-900 font-sans">
       
       {/* Top Header */}
       <div className="bg-white border-b border-slate-200 px-4 py-3 flex-shrink-0 flex justify-between items-center z-30 shadow-sm relative">
