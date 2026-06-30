@@ -140,6 +140,22 @@ export default function UserApp() {
         time_taken_seconds: timeTaken
       }]);
     }
+    
+    // Save exact question history (for both Practice and Test modes)
+    if (session) {
+      try {
+        const historyPayload = results.map(r => ({
+          user_id: session.user.id,
+          mcq_id: r.question.id,
+          is_correct: r.isCorrect,
+        }));
+        // We use upsert so if they replay, it just updates their latest attempt
+        const { error: histErr } = await supabase.from('user_question_history').upsert(historyPayload, { onConflict: 'user_id, mcq_id' });
+        if (histErr) console.error("History logging failed (table might not exist yet):", histErr.message);
+      } catch (e) {
+        console.error("History tracking error:", e);
+      }
+    }
   };
 
   const engine = useGameEngine({

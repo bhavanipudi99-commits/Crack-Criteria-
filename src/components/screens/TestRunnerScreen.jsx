@@ -28,28 +28,54 @@ export default function TestRunnerScreen({ testConfig, finishTest, setScreen, is
 
   useEffect(() => {
     async function loadQuestions() {
-      let query = supabase.from('mcqs').select('*').eq('subject', testConfig.subject);
-      if (testConfig.chapter) {
-        if (testConfig.chapter.includes('|||')) {
-           query = query.eq('chapter', testConfig.chapter);
-        } else {
-           // Prefix match to get all lessons under this chapter, or questions with just this chapter
-           query = query.like('chapter', `${testConfig.chapter}%`);
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const userId = sessionData?.session?.user?.id;
+        
+        let finalQuestions = [];
+        
+        // Try the new optimized RPC first (only if logged in and not replaying)
+        if (userId && !testConfig.isReplay) {
+           const { data: rpcData, error: rpcError } = await supabase.rpc('get_unanswered_mcqs', {
+             p_subject: testConfig.subject,
+             p_chapter: testConfig.chapter || '',
+             p_limit: testConfig.size,
+             p_user_id: userId
+           });
+           
+           if (!rpcError && rpcData) {
+             finalQuestions = rpcData;
+           } else if (rpcError) {
+             console.warn("RPC failed (maybe SQL not run yet?), falling back to standard query:", rpcError.message);
+           }
         }
-      }
-      query = query.limit(testConfig.size); 
-      
-      const { data, error } = await query;
-      if (error) {
-        console.error(error);
+        
+        // Fallback to old client-side randomization if RPC failed or they are replaying
+        if (finalQuestions.length === 0) {
+          let query = supabase.from('mcqs').select('*').eq('subject', testConfig.subject);
+          if (testConfig.chapter) {
+            if (testConfig.chapter.includes('|||')) {
+               query = query.eq('chapter', testConfig.chapter);
+            } else {
+               query = query.like('chapter', `${testConfig.chapter}%`);
+            }
+          }
+          
+          // We can't limit yet because we randomize on client-side (bad for scale, but it's a fallback)
+          const { data, error } = await query;
+          if (error) throw error;
+          
+          finalQuestions = data.sort(() => 0.5 - Math.random()).slice(0, testConfig.size);
+        }
+
+        setQuestions(finalQuestions);
+      } catch (err) {
+        console.error("Failed to load questions:", err);
         alert('Failed to load questions');
         setScreen('MCQ_DASHBOARD');
-        return;
+      } finally {
+        setLoading(false);
       }
-      
-      const shuffled = data.sort(() => 0.5 - Math.random());
-      setQuestions(shuffled);
-      setLoading(false);
     }
     loadQuestions();
   }, [testConfig]);
