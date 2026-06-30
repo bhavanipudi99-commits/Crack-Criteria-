@@ -172,7 +172,16 @@ export default function McqDashboard({ setScreen, startTest }) {
                         const lesProgress = Math.round((stat.completed / stat.total) * 100) || 0;
 
                         return (
-                          <div key={idx} className={`p-4 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all ${isDone ? 'bg-emerald-50/50 border-emerald-100' : 'bg-white border-slate-200'}`}>
+                          <div 
+                            key={idx} 
+                            onClick={() => {
+                               setSelectedSubject(stat.subject);
+                               setSelectedChapter(displayChap);
+                               if (displayLes) setSelectedLesson(displayLes);
+                               setShowProgress(false);
+                            }}
+                            className={`p-4 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all cursor-pointer hover:shadow-md ${isDone ? 'bg-emerald-50/50 border-emerald-100 hover:bg-emerald-50' : 'bg-white border-slate-200 hover:bg-slate-50'}`}
+                          >
                             
                             <div className="flex-1">
                               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{displayChap}</p>
@@ -195,7 +204,7 @@ export default function McqDashboard({ setScreen, startTest }) {
                                 {isDone ? (
                                   <button 
                                     disabled={isResetting}
-                                    onClick={() => handleReplay(stat.subject, stat.chapterStr)}
+                                    onClick={(e) => { e.stopPropagation(); handleReplay(stat.subject, stat.chapterStr); }}
                                     className="px-3 py-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 font-black text-[10px] uppercase tracking-widest rounded-lg transition-colors flex items-center gap-1 disabled:opacity-50"
                                   >
                                     <span>🔄</span> Replay
