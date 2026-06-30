@@ -27,6 +27,12 @@ export default function AdminMcqDashboard({
   const [currentMcq, setCurrentMcq] = useState(null);
   const [saving, setSaving] = useState(false);
 
+  // Markdown Importer State
+  const [isMarkdownModalOpen, setIsMarkdownModalOpen] = useState(false);
+  const [markdownText, setMarkdownText] = useState('');
+  const [markdownPreview, setMarkdownPreview] = useState([]);
+  const [isUploadingMD, setIsUploadingMD] = useState(false);
+
   // Fetch all open error reports globally for the sidebar
   useEffect(() => {
     fetchErrorReports();
@@ -158,6 +164,89 @@ export default function AdminMcqDashboard({
     } catch (err) {
       alert(`Error resolving report: ${err.message}`);
     }
+  };
+
+  const handleParseMarkdown = () => {
+    const lines = markdownText.split('\n');
+    let currentQuestion = null;
+    let parsedMcqs = [];
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      
+      // Check if line starts a question
+      if (line.trim().match(/^(###\s+)?(Question\s+)?\d+[:.]?/i)) {
+        if (currentQuestion && currentQuestion.correct_answer) parsedMcqs.push(currentQuestion);
+        currentQuestion = {
+          question: '',
+          options: [],
+          correct_answer: '',
+          explanation: '',
+          state: 'question'
+        };
+        continue;
+      }
+      
+      if (!currentQuestion) continue;
+      
+      // Check for reveal tag
+      if (line.includes('[!success]')) {
+        currentQuestion.state = 'answer_reveal';
+        continue;
+      }
+      
+      if (currentQuestion.state === 'question') {
+        const optMatch = line.trim().match(/^(-?\s*)?([A-E])[\.\)]\s+(.*)/i);
+        if (optMatch) {
+          currentQuestion.options.push(optMatch[3].trim());
+        } else if (line.trim() !== '' && !line.startsWith('---')) {
+          currentQuestion.question += (currentQuestion.question ? '<br>' : '') + line.trim();
+        }
+      } else if (currentQuestion.state === 'answer_reveal') {
+        const ansMatch = line.trim().match(/^\s*>?\s*\**Answer:\**\s*(?:Answer\.\s*)?([A-E])/i);
+        if (ansMatch && !currentQuestion.correct_answer) {
+          currentQuestion.correct_answer = ansMatch[1].toUpperCase();
+        } else if (line.trim().match(/^\s*>?\s*\**Explanation:\**/i)) {
+          // ignore
+        } else if (line.trim() !== '' && !line.startsWith('---')) {
+          let cleanLine = line.replace(/^\s*>?\s*/, '').trim();
+          if (cleanLine) {
+              currentQuestion.explanation += (currentQuestion.explanation ? '<br>' : '') + cleanLine;
+          }
+        }
+      }
+    }
+    if (currentQuestion && currentQuestion.correct_answer) parsedMcqs.push(currentQuestion);
+    setMarkdownPreview(parsedMcqs);
+  };
+
+  const handleUploadMarkdown = async () => {
+    if (markdownPreview.length === 0) return;
+    setIsUploadingMD(true);
+    
+    const dbChapter = selectedSubChapter ? `${selectedChapter}|||${appSubChapters.find(sc => sc.id === selectedSubChapter)?.name}` : selectedChapter;
+    
+    const payload = markdownPreview.map(q => ({
+      subject: selectedSubject,
+      chapter: dbChapter,
+      question: q.question,
+      options: q.options,
+      correct_answer: q.correct_answer,
+      explanation: q.explanation
+    }));
+
+    try {
+      const { error } = await supabase.from('mcqs').insert(payload);
+      if (error) throw error;
+      alert(`Successfully uploaded ${payload.length} questions!`);
+      setMarkdownText('');
+      setMarkdownPreview([]);
+      setIsMarkdownModalOpen(false);
+      fetchMcqs();
+    } catch (err) {
+      alert(`Upload failed: ${err.message}`);
+    }
+    setIsUploadingMD(false);
   };
 
   // React Quill Modules for rich media
@@ -366,6 +455,12 @@ export default function AdminMcqDashboard({
                   🚀 BULK UPLOAD ALL HARRISON MCQs
                 </button>
                 <button 
+                  onClick={() => setIsMarkdownModalOpen(true)}
+                  className="bg-purple-600 hover:bg-purple-700 text-white font-black py-2 px-6 text-sm rounded-xl shadow-lg transition-colors"
+                >
+                  📝 Import Markdown
+                </button>
+                <button 
                   onClick={() => openEditor()}
                   className="bg-indigo-600 hover:bg-indigo-700 text-white font-black py-2 px-6 text-sm rounded-xl shadow-lg transition-colors"
                 >
@@ -520,6 +615,73 @@ export default function AdminMcqDashboard({
               <button type="button" onClick={() => setIsEditing(false)} className="px-6 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-200">Cancel</button>
               <button onClick={handleSave} disabled={saving} className="px-8 py-3 rounded-xl font-black bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg disabled:opacity-50">
                 {saving ? 'Saving...' : 'Save Question'}
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* Markdown Importer Modal */}
+      {isMarkdownModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[95vh] overflow-hidden shadow-2xl flex flex-col">
+            
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <h2 className="text-xl font-black text-slate-800">Bulk Import from Markdown</h2>
+              <button onClick={() => {setIsMarkdownModalOpen(false); setMarkdownText(''); setMarkdownPreview([]);}} className="text-slate-400 hover:text-slate-600 font-black text-xl">&times;</button>
+            </div>
+
+            <div className="p-6 overflow-y-auto flex-1 flex flex-col space-y-4">
+              <div className="bg-blue-50 text-blue-800 p-4 rounded-xl text-sm font-bold border border-blue-200">
+                Paste your raw Markdown text below. The parser expects questions to start with a number (e.g., `1.` or `### Question 1`), options as `A. text`, and the answer block to contain `> [!success]` and `Answer: A`.
+              </div>
+              
+              <textarea 
+                value={markdownText}
+                onChange={(e) => setMarkdownText(e.target.value)}
+                placeholder="Paste Markdown here..."
+                className="w-full h-64 p-4 rounded-xl border border-slate-300 font-mono text-sm focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none resize-none"
+              />
+              
+              <div className="flex justify-end">
+                <button 
+                  onClick={handleParseMarkdown}
+                  disabled={!markdownText.trim()}
+                  className="bg-slate-800 hover:bg-slate-900 text-white font-black py-2 px-6 rounded-xl shadow-sm disabled:opacity-50"
+                >
+                  Parse & Preview
+                </button>
+              </div>
+
+              {markdownPreview.length > 0 && (
+                <div className="border-t border-slate-200 pt-4 mt-4">
+                  <h3 className="text-lg font-black text-slate-800 mb-4">Preview ({markdownPreview.length} questions parsed)</h3>
+                  <div className="max-h-64 overflow-y-auto space-y-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    {markdownPreview.map((q, idx) => (
+                      <div key={idx} className="bg-white p-4 rounded-lg shadow-sm border border-slate-100">
+                        <p className="font-bold text-sm text-slate-800 mb-2" dangerouslySetInnerHTML={{__html: q.question}}></p>
+                        <div className="pl-4 border-l-2 border-indigo-200 space-y-1 mb-2">
+                          {q.options.map((opt, i) => (
+                            <p key={i} className="text-xs text-slate-600"><span className="font-bold">{String.fromCharCode(65+i)}.</span> {opt}</p>
+                          ))}
+                        </div>
+                        <p className="text-xs font-black text-emerald-600">Answer: {q.correct_answer}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 border-t border-slate-100 flex justify-end gap-4 bg-slate-50">
+              <button onClick={() => {setIsMarkdownModalOpen(false); setMarkdownText(''); setMarkdownPreview([]);}} className="px-6 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-200">Cancel</button>
+              <button 
+                onClick={handleUploadMarkdown} 
+                disabled={markdownPreview.length === 0 || isUploadingMD} 
+                className="px-8 py-3 rounded-xl font-black bg-purple-600 hover:bg-purple-700 text-white shadow-lg disabled:opacity-50 flex items-center gap-2"
+              >
+                {isUploadingMD ? 'Uploading...' : '🚀 Upload to Database'}
               </button>
             </div>
 
