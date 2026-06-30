@@ -42,7 +42,7 @@ export default function AuthScreen({ setScreen, adminPassword, setAdminPassword 
             <span className="text-3xl">🧩</span>
           </div>
           <h1 className="text-4xl font-black text-slate-800 tracking-tight">Medicine Arcade</h1>
-          <p className="text-slate-500 font-bold text-sm mt-1">Keep practicing, keep learning</p>
+          <p className="text-slate-500 font-bold text-sm mt-1">Keep Practicing, Keep Learning</p>
         </div>
 
         <div className="bg-white border border-slate-200 rounded-3xl p-8 mb-4 shadow-sm">
