@@ -126,12 +126,16 @@ export default function UserApp() {
     
     // Save to DB if test mode
     if (session && mcqTestConfig.mode === 'TEST') {
-      const score = results.filter(r => r.isCorrect).length;
+      const correctCount = results.filter(r => r.isCorrect).length;
+      const wrongCount = results.filter(r => !r.isCorrect && r.userAnswer !== 'SKIPPED').length;
+      let dbScore = correctCount - (wrongCount / 3);
+      dbScore = Math.round(dbScore * 100) / 100;
+
       await supabase.from('test_sessions').insert([{
         user_id: session.user.id,
         subject: mcqTestConfig.subject,
         chapter: mcqTestConfig.chapter || 'MIXED',
-        score: score,
+        score: dbScore,
         total_questions: results.length,
         time_taken_seconds: timeTaken
       }]);

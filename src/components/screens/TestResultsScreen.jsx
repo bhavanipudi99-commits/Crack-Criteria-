@@ -1,7 +1,12 @@
 import React from 'react';
 
 export default function TestResultsScreen({ results, totalTimeSeconds, setScreen, mode }) {
-  const score = results.filter(r => r.isCorrect).length;
+  const correctCount = results.filter(r => r.isCorrect).length;
+  const wrongCount = results.filter(r => !r.isCorrect && r.userAnswer !== 'SKIPPED').length;
+  
+  let score = correctCount - (wrongCount / 3);
+  score = Math.round(score * 100) / 100; // Round to 2 decimals max
+
   const total = results.length;
   const percentage = Math.round((score / total) * 100) || 0;
   
@@ -16,9 +21,13 @@ export default function TestResultsScreen({ results, totalTimeSeconds, setScreen
           {mode === 'PRACTICE' ? 'Practice Mode Summary' : `Completed in ${mins}m ${secs}s`}
         </p>
         
-        <div className="mt-8 inline-flex flex-col items-center justify-center w-48 h-48 rounded-full bg-white border-8 border-[#4F86F7] shadow-xl">
+        <div className="mt-8 inline-flex flex-col items-center justify-center w-56 h-56 rounded-full bg-white border-8 border-[#4F86F7] shadow-xl">
           <span className="text-5xl font-black text-slate-800">{score}<span className="text-2xl text-slate-400">/{total}</span></span>
-          <span className="text-sm font-bold text-slate-500 uppercase tracking-widest mt-1">{percentage}% SCORE</span>
+          <span className="text-sm font-bold text-slate-500 uppercase tracking-widest mt-1 mb-2">{percentage}% SCORE</span>
+          <div className="flex gap-3 text-xs font-bold text-slate-400">
+            <span className="text-emerald-500">{correctCount} Correct</span>
+            <span className="text-rose-500">{wrongCount} Wrong</span>
+          </div>
         </div>
       </div>
 
