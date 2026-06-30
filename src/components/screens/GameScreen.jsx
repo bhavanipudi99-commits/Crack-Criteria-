@@ -91,27 +91,25 @@ export default function GameScreen(props) {
 
       <div className={`flex-1 overflow-hidden transform transition-all duration-500 flex flex-col justify-center ${isShuffling ? 'scale-90 opacity-0' : 'scale-100 opacity-100'}`}>
         {currentSubMode === 'CANVAS' ? (
-          <div className="w-full h-full p-2 overflow-y-auto">
-            <div className="grid grid-cols-4 gap-2 max-w-2xl mx-auto my-auto">
+          <div className="flex flex-col items-center justify-start w-full h-full px-4 py-4 overflow-y-auto">
+            <div className="w-full max-w-2xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pb-4">
               {boardTiles.map((tile, idx) => {
                 const color = getTileColor(tile.criterion.criterionCategory);
                 const isPair = tile.criterion.tileCount === 2;
                 return (
                   <button key={idx} onClick={() => handleTileTap(idx)}
-                    className={`relative flex flex-col items-center justify-center p-1.5 sm:p-2 text-center border-2 rounded-2xl active:scale-95 transition-all aspect-square overflow-hidden ${
+                    className={`relative flex items-center justify-center min-h-[4.5rem] p-4 text-center border-2 rounded-[18px] active:scale-[0.98] transition-all shadow-sm ${
                       tile.solved ? 'bg-gradient-to-br from-emerald-400 to-emerald-500 border-emerald-600 shadow-[0_4px_0_0_#059669] text-white pointer-events-none' :
                       tile.errorState ? 'bg-gradient-to-br from-rose-400 to-rose-500 border-rose-600 shadow-[0_4px_0_0_#e11d48] text-white animate-shake' :
                       color
                     }`}
                   >
                     {isPair && !tile.solved && !tile.errorState && (
-                      <div className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-white/90 flex items-center justify-center text-[7px] font-black text-slate-700 shadow-sm backdrop-blur-sm z-10">½</div>
+                      <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-white/90 flex items-center justify-center text-[9px] font-black text-slate-700 shadow-sm backdrop-blur-sm z-10">½</div>
                     )}
-                    <div className="w-full h-full flex items-center justify-center">
-                      <p className="font-black leading-tight tracking-tight text-[10px] sm:text-xs drop-shadow-sm line-clamp-4 text-balance">
-                        {tile.criterion.label}
-                      </p>
-                    </div>
+                    <p className="font-black leading-snug tracking-tight text-sm sm:text-base drop-shadow-sm w-full break-words">
+                      {tile.criterion.label}
+                    </p>
                   </button>
                 );
               })}
