@@ -15,6 +15,11 @@ export default function AdminMcqDashboard() {
   const [selectedChapter, setSelectedChapter] = useState(null);
   const [selectedSubChapter, setSelectedSubChapter] = useState(null);
 
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const PAGE_SIZE = 20;
+
   // Editor State
   const [isEditing, setIsEditing] = useState(false);
   const [currentMcq, setCurrentMcq] = useState(null);
@@ -47,13 +52,15 @@ export default function AdminMcqDashboard() {
       fetchMcqs();
     } else {
       setMcqs([]);
+      setHasMore(false);
     }
-  }, [selectedChapter, selectedSubChapter]);
+  }, [selectedChapter, selectedSubChapter, currentPage, refreshTrigger]);
 
   const handleSelectFolder = (sub, chap, scId = null) => {
     setSelectedSubject(sub);
     setSelectedChapter(chap);
     setSelectedSubChapter(scId);
+    setCurrentPage(0);
   };
 
   const fetchMcqs = async () => {
@@ -61,14 +68,19 @@ export default function AdminMcqDashboard() {
       setLoading(true);
       const dbChapStr = selectedSubChapter ? `${selectedChapter}|||${selectedSubChapter}` : selectedChapter;
       
-      let query = supabase.from('mcqs').select('*')
+      const from = currentPage * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+
+      let query = supabase.from('mcqs').select('*', { count: 'exact' })
         .eq('subject', selectedSubject)
         .eq('chapter', dbChapStr)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .range(from, to);
 
-      const { data, error } = await query;
+      const { data, count, error } = await query;
       if (error) throw error;
       setMcqs(data || []);
+      setHasMore(count > to + 1);
     } catch (err) {
       console.error(err);
       alert(`Error fetching MCQs: ${err.message}`);
@@ -232,8 +244,8 @@ export default function AdminMcqDashboard() {
       setMarkdownText('');
       setMarkdownPreview([]);
       setIsMarkdownModalOpen(false);
-      fetchMcqs();
       setRefreshTrigger(p => p + 1);
+      setCurrentPage(0);
     } catch (err) {
       alert(`Upload failed: ${err.message}`);
     }
@@ -495,6 +507,27 @@ export default function AdminMcqDashboard() {
                      <div className="col-span-full text-center p-12 text-slate-400 font-bold border-2 border-dashed border-slate-200 rounded-2xl">
                        This folder is empty. Click "+ Add Question Here" to build your curriculum!
                      </div>
+                  )}
+                  {mcqs.length > 0 && (
+                    <div className="col-span-full flex justify-between items-center bg-white p-4 rounded-xl border border-slate-200 mt-4">
+                      <button 
+                        onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
+                        disabled={currentPage === 0 || loading}
+                        className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg disabled:opacity-50 transition-colors"
+                      >
+                        ← Previous Page
+                      </button>
+                      <span className="text-sm font-black text-slate-500">
+                        Page {currentPage + 1}
+                      </span>
+                      <button 
+                        onClick={() => setCurrentPage(p => p + 1)}
+                        disabled={!hasMore || loading}
+                        className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg disabled:opacity-50 transition-colors"
+                      >
+                        Next Page →
+                      </button>
+                    </div>
                   )}
                 </div>
               )}

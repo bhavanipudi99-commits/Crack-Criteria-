@@ -1,6 +1,32 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 
 const uid = (prefix) => `${prefix}_${Math.random().toString(36).substr(2, 9)}`;
+
+function DebouncedInput({ value, onChange, className, placeholder }) {
+  const [localVal, setLocalVal] = useState(value || '');
+  
+  useEffect(() => {
+    setLocalVal(value || '');
+  }, [value]);
+
+  return (
+    <input
+      type="text"
+      placeholder={placeholder}
+      className={className}
+      value={localVal}
+      onChange={(e) => setLocalVal(e.target.value)}
+      onBlur={() => {
+        if (localVal !== (value || '')) onChange(localVal);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+           e.target.blur();
+        }
+      }}
+    />
+  );
+}
 
 // ─── Numerical Section: Tile Picker ──────────────────────────────────────────
 function NumericalEditor({
@@ -182,29 +208,27 @@ function NumericalEditor({
         <div className="space-y-2 mb-3">
           <div className="flex items-center gap-3">
             <span className="text-[9px] font-black text-amber-600 uppercase tracking-widest w-24 flex-shrink-0">Question:</span>
-            <input
-              type="text"
+            <DebouncedInput
               placeholder={targetObj
                 ? `${targetObj.tableName} — ${targetObj.headingText ? targetObj.headingText + ' — ' : ''}${targetObj.criterionText ? targetObj.criterionText + ' — ' : ''}${targetObj.parsed?.redacted}`
                 : 'Auto-generated from selected target tile'
               }
               value={activeQ?.prompt || ''}
-              onChange={e => setCanvasConfigs(prev => prev.map(c => {
+              onChange={val => setCanvasConfigs(prev => prev.map(c => {
                 if (c.id !== canvas.id) return c;
-                return { ...c, questions: c.questions.map(q => q.id === activeQ?.id ? { ...q, prompt: e.target.value } : q) };
+                return { ...c, questions: c.questions.map(q => q.id === activeQ?.id ? { ...q, prompt: val } : q) };
               }))}
               className="flex-1 px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-800 bg-slate-50 focus:bg-white focus:outline-none focus:border-amber-400 transition-all"
             />
           </div>
           <div className="flex items-center gap-3">
             <span className="text-[9px] font-black text-amber-500 uppercase tracking-widest w-24 flex-shrink-0">Subheading:</span>
-            <input
-              type="text"
+            <DebouncedInput
               placeholder="e.g. Select the correct numerical value"
               value={activeQ?.subheading || ''}
-              onChange={e => setCanvasConfigs(prev => prev.map(c => {
+              onChange={val => setCanvasConfigs(prev => prev.map(c => {
                 if (c.id !== canvas.id) return c;
-                return { ...c, questions: c.questions.map(q => q.id === activeQ?.id ? { ...q, subheading: e.target.value } : q) };
+                return { ...c, questions: c.questions.map(q => q.id === activeQ?.id ? { ...q, subheading: val } : q) };
               }))}
               className="flex-1 px-3 py-1.5 border border-slate-200 rounded-lg text-[10px] font-medium text-slate-600 bg-slate-50 focus:bg-white focus:outline-none focus:border-amber-400 transition-all"
             />
@@ -719,10 +743,10 @@ export default function CanvasComposer({
           <span className="text-xl">{type === 'CANVAS' ? '🧩' : type === 'NUMERICAL' ? '🔢' : '❌'}</span>
           <div>
             <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{type} Composer</p>
-            <input
-              type="text"
+            <DebouncedInput
+              placeholder="Canvas Name"
               value={canvas.name}
-              onChange={e => setCanvasConfigs(p => p.map(c => c.id !== canvas.id ? c : { ...c, name: e.target.value }))}
+              onChange={val => setCanvasConfigs(p => p.map(c => c.id !== canvas.id ? c : { ...c, name: val }))}
               className="font-black text-slate-800 bg-transparent focus:outline-none focus:border-b-2 focus:border-amber-400 text-lg w-48"
             />
           </div>
@@ -819,15 +843,21 @@ export default function CanvasComposer({
           <div className="bg-white border-b border-slate-200 px-6 py-4 flex-shrink-0 z-10 shadow-sm space-y-3">
             <div className="flex items-center gap-4">
               <span className="text-[10px] font-black text-teal-700 uppercase tracking-widest whitespace-nowrap w-24">Heading:</span>
-              <input type="text" placeholder="e.g. Identify Jones Major Criteria" value={activeQ?.prompt || ''}
-                onChange={e => setCanvasConfigs(p => p.map(c => { if (c.id !== canvas.id) return c; return { ...c, questions: (c.questions || []).map(q => q.id === activeQ?.id ? { ...q, prompt: e.target.value } : q) }; }))}
-                className="flex-1 px-4 py-2 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 bg-slate-50 focus:bg-white focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-50 transition-all shadow-inner" />
+              <DebouncedInput
+                placeholder="e.g. Identify Jones Major Criteria"
+                value={activeQ?.prompt || ''}
+                onChange={val => setCanvasConfigs(p => p.map(c => { if (c.id !== canvas.id) return c; return { ...c, questions: (c.questions || []).map(q => q.id === activeQ?.id ? { ...q, prompt: val } : q) }; }))}
+                className="flex-1 px-4 py-2 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 bg-slate-50 focus:bg-white focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-50 transition-all shadow-inner"
+              />
             </div>
             <div className="flex items-center gap-4">
               <span className="text-[10px] font-black text-teal-600 uppercase tracking-widest whitespace-nowrap w-24">Subheading:</span>
-              <input type="text" placeholder="e.g. Select at least 2 major criteria" value={activeQ?.subheading || ''}
-                onChange={e => setCanvasConfigs(p => p.map(c => { if (c.id !== canvas.id) return c; return { ...c, questions: (c.questions || []).map(q => q.id === activeQ?.id ? { ...q, subheading: e.target.value } : q) }; }))}
-                className="flex-1 px-4 py-2 border border-slate-200 rounded-xl text-xs font-medium text-slate-600 bg-slate-50 focus:bg-white focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-50 transition-all shadow-inner" />
+              <DebouncedInput
+                placeholder="e.g. Select at least 2 major criteria"
+                value={activeQ?.subheading || ''}
+                onChange={val => setCanvasConfigs(p => p.map(c => { if (c.id !== canvas.id) return c; return { ...c, questions: (c.questions || []).map(q => q.id === activeQ?.id ? { ...q, subheading: val } : q) }; }))}
+                className="flex-1 px-4 py-2 border border-slate-200 rounded-xl text-xs font-medium text-slate-600 bg-slate-50 focus:bg-white focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-50 transition-all shadow-inner"
+              />
             </div>
           </div>
 
