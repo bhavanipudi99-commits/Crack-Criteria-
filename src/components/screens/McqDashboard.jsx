@@ -63,7 +63,7 @@ export default function McqDashboard({ setScreen, startTest }) {
   return (
     <div className="flex flex-col items-center justify-between min-h-screen bg-slate-50 p-6">
       <div className="w-full max-w-md bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mt-10">
-        <h1 className="text-2xl font-black text-slate-800 mb-6 text-center">📝 Start MCQ Test</h1>
+        <h1 className="text-2xl font-black text-slate-800 mb-6 text-center">📝 Start MCQ</h1>
 
         <div className="space-y-4">
           <div>
@@ -80,15 +80,15 @@ export default function McqDashboard({ setScreen, startTest }) {
 
           {selectedSubject && (
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Chapter</label>
-              <select 
-                value={selectedChapter} 
-                onChange={e => { setSelectedChapter(e.target.value); setSelectedLesson(''); }}
-                className="w-full p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-700"
-              >
-                <option value="">All Chapters</option>
-                {Object.keys(hierarchy[selectedSubject] || {}).map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
+               <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Chapter</label>
+               <select 
+                 value={selectedChapter} 
+                 onChange={e => { setSelectedChapter(e.target.value); setSelectedLesson(''); }}
+                 className="w-full p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-700"
+               >
+                 <option value="">All Chapters</option>
+                 {Object.keys(hierarchy[selectedSubject] || {}).map(c => <option key={c} value={c}>{c}</option>)}
+               </select>
             </div>
           )}
 
@@ -117,19 +117,36 @@ export default function McqDashboard({ setScreen, startTest }) {
             />
           </div>
 
-          <button 
-            onClick={() => {
-               let finalChapter = selectedChapter;
-               if (selectedLesson) {
-                  finalChapter = `${selectedChapter}|||${selectedLesson}`;
-               }
-               startTest({ subject: selectedSubject, chapter: finalChapter, size: testSize, mode: 'PRACTICE' });
-            }}
-            disabled={!selectedSubject}
-            className={`w-full py-4 rounded-xl font-black text-white uppercase tracking-wider mt-4 ${selectedSubject ? 'bg-[#4F86F7] hover:bg-blue-600' : 'bg-slate-300 cursor-not-allowed'}`}
-          >
-            Start Timer & Begin →
-          </button>
+          <div className="flex flex-col sm:flex-row gap-3 mt-4">
+            <button 
+              onClick={() => {
+                 let finalChapter = selectedChapter;
+                 if (selectedLesson) {
+                    finalChapter = `${selectedChapter}|||${selectedLesson}`;
+                 }
+                 startTest({ subject: selectedSubject, chapter: finalChapter, size: testSize, mode: 'PRACTICE' });
+              }}
+              disabled={!selectedSubject}
+              className={`flex-1 py-3 rounded-xl font-black text-white uppercase tracking-wider text-xs md:text-sm shadow-sm transition-colors ${selectedSubject ? 'bg-[#4F86F7] hover:bg-blue-600' : 'bg-slate-300 cursor-not-allowed'}`}
+            >
+              📖 Practice
+              <div className="text-[10px] opacity-80 font-bold normal-case mt-0.5">Instant Answers</div>
+            </button>
+            <button 
+              onClick={() => {
+                 let finalChapter = selectedChapter;
+                 if (selectedLesson) {
+                    finalChapter = `${selectedChapter}|||${selectedLesson}`;
+                 }
+                 startTest({ subject: selectedSubject, chapter: finalChapter, size: testSize, mode: 'TEST', timeLimitMinutes: testSize });
+              }}
+              disabled={!selectedSubject}
+              className={`flex-1 py-3 rounded-xl font-black text-white uppercase tracking-wider text-xs md:text-sm shadow-sm transition-colors ${selectedSubject ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-slate-300 cursor-not-allowed'}`}
+            >
+              ⏱ Test Mode
+              <div className="text-[10px] opacity-80 font-bold normal-case mt-0.5">{testSize} Min Timer</div>
+            </button>
+          </div>
         </div>
       </div>
       
