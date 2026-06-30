@@ -41,8 +41,8 @@ export default function AuthScreen({ setScreen, adminPassword, setAdminPassword 
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-3xl bg-indigo-100 text-indigo-600 mb-4 shadow-sm border border-indigo-200">
             <span className="text-3xl">🧩</span>
           </div>
-          <h1 className="text-4xl font-black text-slate-800 tracking-tight">MAMS</h1>
-          <p className="text-slate-500 font-bold text-sm mt-1">High-Precision Jigsaw Memory Arcade</p>
+          <h1 className="text-4xl font-black text-slate-800 tracking-tight">Medicine Arcade</h1>
+          <p className="text-slate-500 font-bold text-sm mt-1">Keep practicing, keep learning</p>
         </div>
 
         <div className="bg-white border border-slate-200 rounded-3xl p-8 mb-4 shadow-sm">
