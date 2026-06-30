@@ -135,7 +135,7 @@ export default function McqDashboard({ setScreen, startTest }) {
       
       <div className="w-full max-w-md space-y-3 mt-8">
         <button onClick={() => setScreen('PLAYER_HOME')} className="w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-extrabold py-3.5 rounded-xl text-xs uppercase tracking-wider transition-colors">
-          🧩 Play Canvas Games
+          🧩 Crack-Criteria
         </button>
         <button onClick={() => supabase.auth.signOut()} className="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 font-extrabold py-3.5 rounded-xl text-xs uppercase tracking-wider transition-colors">
           Sign Out
