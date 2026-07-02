@@ -100,6 +100,32 @@ export default function UserApp() {
     return () => subscription.unsubscribe();
   }, [screen]);
 
+  // Anti-Piracy Measures
+  useEffect(() => {
+    const handleContextMenu = (e) => e.preventDefault();
+    const handleCopy = (e) => { e.preventDefault(); alert("Copying content is disabled for copyright protection."); };
+    const handleCut = (e) => { e.preventDefault(); alert("Cutting content is disabled for copyright protection."); };
+    const handleKeyDown = (e) => {
+      // Basic block for Print Screen and Save As (Ctrl/Cmd + S)
+      if (e.key === 'PrintScreen' || (e.ctrlKey && e.key === 's') || (e.metaKey && e.key === 's')) {
+        e.preventDefault();
+        alert("Screenshots and saving are disabled.");
+      }
+    };
+
+    document.addEventListener('contextmenu', handleContextMenu);
+    document.addEventListener('copy', handleCopy);
+    document.addEventListener('cut', handleCut);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('contextmenu', handleContextMenu);
+      document.removeEventListener('copy', handleCopy);
+      document.removeEventListener('cut', handleCut);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
   // Expanded Chapters State
   const [expandedChapters, setExpandedChapters] = useState(() => {
     try {
@@ -165,7 +191,18 @@ export default function UserApp() {
   if (!isCloudLoaded) return <div className="min-h-screen bg-slate-50 flex items-center justify-center font-bold">Loading App...</div>;
 
   return (
-    <div className="w-full min-h-screen">
+    <div className="w-full min-h-screen relative">
+      {/* Anti-Piracy Dynamic Watermark Overlay */}
+      {session && (
+        <div className="fixed inset-0 pointer-events-none z-[9999] opacity-[0.04] overflow-hidden flex flex-wrap justify-center items-center">
+          {Array.from({ length: 40 }).map((_, i) => (
+            <div key={i} className="transform -rotate-45 text-slate-900 font-black text-2xl m-8 whitespace-nowrap">
+              {session.user.email} - Do Not Copy
+            </div>
+          ))}
+        </div>
+      )}
+
       {screen === 'AUTH' && <AuthScreen setScreen={setScreen} adminPassword={adminPassword} setAdminPassword={setAdminPassword} />}
       {screen === 'MCQ_DASHBOARD' && <McqDashboard setScreen={setScreen} startTest={startMcqTest} viewPastResults={(results) => { setMcqTestResults(results); setMcqTestTime(0); setMcqTestConfig({ mode: 'REVIEW' }); setScreen('MCQ_RESULTS'); }} adminPassword={adminPassword} />}
       {screen === 'MCQ_TEST' && <TestRunnerScreen testConfig={mcqTestConfig} finishTest={finishMcqTest} setScreen={setScreen} />}
