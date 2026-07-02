@@ -192,15 +192,16 @@ export default function UserApp() {
 
   return (
     <div className="w-full min-h-screen relative">
-      {/* Anti-Piracy Dynamic Watermark Overlay */}
+      {/* Anti-Piracy Logo Watermark Overlay */}
       {session && (
-        <div className="fixed inset-0 pointer-events-none z-[9999] opacity-[0.04] overflow-hidden flex flex-wrap justify-center items-center">
-          {Array.from({ length: 40 }).map((_, i) => (
-            <div key={i} className="transform -rotate-45 text-slate-900 font-black text-2xl m-8 whitespace-nowrap">
-              {session.user.email} - Do Not Copy
-            </div>
-          ))}
-        </div>
+        <div className="fixed inset-0 pointer-events-none z-[9999] overflow-hidden"
+          style={{
+            backgroundImage: 'url(/logo.jpg)',
+            backgroundSize: '180px 180px',
+            backgroundRepeat: 'repeat',
+            opacity: 0.04,
+          }}
+        />
       )}
 
       {screen === 'AUTH' && <AuthScreen setScreen={setScreen} adminPassword={adminPassword} setAdminPassword={setAdminPassword} />}
