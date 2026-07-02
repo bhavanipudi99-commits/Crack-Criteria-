@@ -53,9 +53,25 @@ export default function CurriculumSidebar({
     } else alert('Chapter empty or exists.');
   };
 
+  const deleteSubject = (sub) => {
+    if (window.confirm(`Delete subject "${sub}" and all its chapters/sub-chapters?`)) {
+      setAppSubjects(p => p.filter(s => s !== sub));
+      
+      const chaptersToDel = appChapters.filter(c => c.subject === sub);
+      const chapterNames = chaptersToDel.map(c => c.name);
+      
+      setAppChapters(p => p.filter(c => c.subject !== sub));
+      setAppSubChapters(p => p.filter(sc => !chapterNames.includes(sc.chapterName)));
+      
+      if (setCriteriaTables) setCriteriaTables(p => p.filter(t => !chapterNames.includes(t.chapter)));
+      if (setCanvasConfigs) setCanvasConfigs(p => p.filter(c => !chapterNames.includes(c.chapter)));
+    }
+  };
+
   const deleteChapter = (id, name) => {
     if (window.confirm(`Delete "${name}" and all its contents?`)) {
       setAppChapters(p => p.filter(c => c.id !== id));
+      setAppSubChapters(p => p.filter(sc => sc.chapterName !== name));
       if (setCriteriaTables) setCriteriaTables(p => p.filter(t => t.chapter !== name));
       if (setCanvasConfigs) setCanvasConfigs(p => p.filter(c => c.chapter !== name));
     }
@@ -175,7 +191,10 @@ export default function CurriculumSidebar({
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {!editingSubject.oldName && (
-                      <span onClick={(e) => { e.stopPropagation(); setEditingSubject({ oldName: sub, newName: sub }); }} className="text-[10px] text-indigo-300 hover:text-white cursor-pointer px-1">✎</span>
+                      <>
+                        <span onClick={(e) => { e.stopPropagation(); setEditingSubject({ oldName: sub, newName: sub }); }} className="text-[10px] text-indigo-300 hover:text-white cursor-pointer px-1">✎</span>
+                        <span onClick={(e) => { e.stopPropagation(); deleteSubject(sub); }} className="text-[10px] text-rose-300 hover:text-rose-100 cursor-pointer px-1">Del</span>
+                      </>
                     )}
                     <span className="text-[9px] font-bold text-indigo-200 bg-indigo-800/40 px-2 py-0.5 rounded-full">{subChapters.length} ch</span>
                     <span className={`text-indigo-200 text-xs transition-transform duration-300 ${isSubExpanded ? 'rotate-90' : ''}`}>▶</span>

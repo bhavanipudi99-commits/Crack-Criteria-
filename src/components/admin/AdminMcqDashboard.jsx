@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
+import { marked } from 'marked';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import McqSidebar from './McqSidebar';
@@ -169,56 +170,63 @@ export default function AdminMcqDashboard() {
   };
 
   const handleParseMarkdown = () => {
-    const lines = markdownText.split('\n');
-    let currentQuestion = null;
+    // Split text into individual questions using common prefixes (1., ### 1., Q:, Question 1:, etc.)
+    const sections = markdownText.split(/^(?:###\s*)?(?:Question\s*\d*|Q\d*|\d+)[\.\:\s]+/im).filter(s => s.trim());
     let parsedMcqs = [];
     
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
+    for (const section of sections) {
+      let questionLines = [];
+      let options = [];
+      let correctAnswer = '';
+      let explanationLines = [];
+      let inCallout = false;
       
-      // Check if line starts a question
-      if (line.trim().match(/^(###\s+)?(Question\s+)?\d+[:.]?/i)) {
-        if (currentQuestion && currentQuestion.correct_answer) parsedMcqs.push(currentQuestion);
-        currentQuestion = {
-          question: '',
-          options: [],
-          correct_answer: '',
-          explanation: '',
-          state: 'question'
-        };
-        continue;
-      }
-      
-      if (!currentQuestion) continue;
-      
-      // Check for reveal tag
-      if (line.includes('[!success]')) {
-        currentQuestion.state = 'answer_reveal';
-        continue;
-      }
-      
-      if (currentQuestion.state === 'question') {
-        const optMatch = line.trim().match(/^(-?\s*)?([A-E])[\.\)]\s+(.*)/i);
-        if (optMatch) {
-          currentQuestion.options.push(optMatch[3].trim());
-        } else if (line.trim() !== '' && !line.startsWith('---')) {
-          currentQuestion.question += (currentQuestion.question ? '<br>' : '') + line.trim();
+      const lines = section.split('\n');
+      for (let line of lines) {
+        // Check if the line enters an Obsidian callout (e.g., > [!success], > [!info])
+        if (line.match(/^\s*>?\s*\[!(.*?)\]/)) {
+          inCallout = true;
+          continue; // Skip the callout header line
         }
-      } else if (currentQuestion.state === 'answer_reveal') {
-        const ansMatch = line.trim().match(/^\s*>?\s*\**Answer:\**\s*(?:Answer\.\s*)?([A-E])/i);
-        if (ansMatch && !currentQuestion.correct_answer) {
-          currentQuestion.correct_answer = ansMatch[1].toUpperCase();
-        } else if (line.trim().match(/^\s*>?\s*\**Explanation:\**/i)) {
-          // ignore
-        } else if (line.trim() !== '' && !line.startsWith('---')) {
-          let cleanLine = line.replace(/^\s*>?\s*/, '').trim();
-          if (cleanLine) {
-              currentQuestion.explanation += (currentQuestion.explanation ? '<br>' : '') + cleanLine;
+        
+        if (inCallout) {
+          // We are inside the Answer/Explanation block
+          let cleanLine = line.replace(/^\s*>?\s?/, ''); // Strip the leading '>'
+          
+          // Check for 'Answer: A'
+          const ansMatch = cleanLine.match(/^\s*\**Answer:\**\s*(?:Answer\.\s*)?([A-E])/i);
+          if (ansMatch && !correctAnswer) {
+            correctAnswer = ansMatch[1].toUpperCase();
+          } else if (!cleanLine.match(/^\s*\**Explanation:\**/i)) {
+            // Everything else becomes the explanation (including tables, charts, text)
+            explanationLines.push(cleanLine);
+          }
+        } else {
+          // We are in the Question block
+          // Check if the line is an option (e.g., - A. Option text)
+          const optMatch = line.trim().match(/^(-?\s*)?([A-E])[\.\)]\s+(.*)/i);
+          if (optMatch) {
+            options.push(optMatch[3].trim());
+          } else if (line.trim() !== '' && !line.startsWith('---')) {
+            questionLines.push(line);
           }
         }
       }
+      
+      const rawQuestion = questionLines.join('\n').trim();
+      const rawExplanation = explanationLines.join('\n').trim();
+      
+      if (rawQuestion || rawExplanation) {
+        parsedMcqs.push({
+          question: marked.parse(rawQuestion),
+          // Fallback dummy options if none were found
+          options: options.length > 0 ? options : ['Edit Option A', 'Edit Option B', 'Edit Option C', 'Edit Option D'],
+          correct_answer: correctAnswer || 'A',
+          explanation: rawExplanation ? marked.parse(rawExplanation) : ''
+        });
+      }
     }
-    if (currentQuestion && currentQuestion.correct_answer) parsedMcqs.push(currentQuestion);
+    
     setMarkdownPreview(parsedMcqs);
   };
 

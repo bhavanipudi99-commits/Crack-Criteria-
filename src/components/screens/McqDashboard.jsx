@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 
-export default function McqDashboard({ setScreen, startTest }) {
+export default function McqDashboard({ setScreen, startTest, viewPastResults }) {
   const [hierarchy, setHierarchy] = useState({});
   const [selectedSubject, setSelectedSubject] = useState('');
   const [selectedChapter, setSelectedChapter] = useState('');
@@ -10,14 +10,11 @@ export default function McqDashboard({ setScreen, startTest }) {
   const [loading, setLoading] = useState(true);
   
   // Progress State
-  const [showProgress, setShowProgress] = useState(false);
-  const [progressStats, setProgressStats] = useState({}); // 'Sub|Chap|Les': { total, completed }
+  const [progressStats, setProgressStats] = useState({});
   const [isResetting, setIsResetting] = useState(false);
-  const [expandedProgressSubject, setExpandedProgressSubject] = useState('');
 
   useEffect(() => {
     async function fetchHierarchy() {
-      // 1. Get user session for history
       const { data: sessionData } = await supabase.auth.getSession();
       const userId = sessionData?.session?.user?.id;
       
@@ -36,11 +33,7 @@ export default function McqDashboard({ setScreen, startTest }) {
       
       while (hasMore) {
         const { data, error } = await supabase.from('mcqs').select('id, subject, chapter').range(from, from + step - 1);
-        if (error) {
-          console.error('Error fetching MCQs:', error);
-          setLoading(false);
-          return;
-        }
+        if (error) { console.error('Error fetching MCQs:', error); setLoading(false); return; }
         allData = allData.concat(data);
         if (data.length < step) hasMore = false;
         from += step;
@@ -63,20 +56,16 @@ export default function McqDashboard({ setScreen, startTest }) {
         if (!hier[sub][chap]) hier[sub][chap] = new Set();
         if (les) hier[sub][chap].add(les);
         
-        // Track stats
         const finalChapStr = les ? `${chap}|||${les}` : chap;
         const key = `${sub}|${finalChapStr}`;
-        if (!stats[key]) stats[key] = { total: 0, completed: 0, subject: sub, chapterStr: finalChapStr };
+        if (!stats[key]) stats[key] = { total: 0, completed: 0, subject: sub, chapterStr: finalChapStr, chap, les };
         stats[key].total++;
         if (completedSet.has(row.id)) stats[key].completed++;
       });
       
-      // Convert sets to arrays
-      for (const s in hier) {
-        for (const c in hier[s]) {
+      for (const s in hier)
+        for (const c in hier[s])
            hier[s][c] = Array.from(hier[s][c]);
-        }
-      }
       
       setHierarchy(hier);
       setProgressStats(stats);
@@ -102,133 +91,70 @@ export default function McqDashboard({ setScreen, startTest }) {
     setIsResetting(false);
   };
 
-  if (loading) return <div className="flex justify-center items-center h-screen bg-slate-50"><p>Loading database...</p></div>;
+  const handleReview = async (subject, chapterStr) => {
+    setIsResetting(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData?.session?.user?.id;
+      if (!userId) return;
+      
+      let query = supabase.from('mcqs').select('*').eq('subject', subject);
+      if (chapterStr) query = query.like('chapter', chapterStr.includes('|||') ? chapterStr : `${chapterStr}%`);
+      const { data: mcqs } = await query;
+      
+      const { data: hist } = await supabase.from('user_question_history').select('mcq_id, is_correct').eq('user_id', userId);
+      const histMap = {};
+      (hist || []).forEach(h => histMap[h.mcq_id] = h.is_correct);
+      
+      const answeredMcqs = mcqs.filter(m => histMap[m.id] !== undefined);
+      const results = answeredMcqs.map(q => ({
+        question: q,
+        isCorrect: histMap[q.id],
+        userAnswer: histMap[q.id] ? q.correct_answer : 'UNKNOWN'
+      }));
+      
+      if (viewPastResults) viewPastResults(results);
+    } catch (e) {
+      console.error(e);
+      alert("Failed to load past results.");
+    }
+    setIsResetting(false);
+  };
 
-  if (showProgress) {
-    // Group stats by Subject for the elegant UI
-    const subjectsMap = {};
-    Object.values(progressStats).forEach(stat => {
-      if (!subjectsMap[stat.subject]) {
-        subjectsMap[stat.subject] = { total: 0, completed: 0, lessons: [] };
-      }
-      subjectsMap[stat.subject].total += stat.total;
-      subjectsMap[stat.subject].completed += stat.completed;
-      subjectsMap[stat.subject].lessons.push(stat);
-    });
+  const getStats = (sub, chap, les) => {
+    const key = `${sub}|${les ? `${chap}|||${les}` : chap}`;
+    return progressStats[key] || { total: 0, completed: 0 };
+  };
 
-    return (
-      <div className="flex flex-col min-h-screen bg-slate-50 p-4 md:p-8">
-        <div className="w-full max-w-3xl mx-auto">
-          <div className="flex justify-between items-center mb-8">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight">📊 Progress Tracker</h1>
-              <p className="text-sm font-bold text-slate-400 mt-1">Track your completed questions across all subjects.</p>
-            </div>
-            <button onClick={() => setShowProgress(false)} className="px-5 py-2.5 bg-white border-2 border-slate-200 text-slate-600 hover:text-slate-900 font-bold rounded-xl text-sm shadow-sm transition-all hover:border-slate-300">Close</button>
-          </div>
-          
-          <div className="space-y-4">
-            {Object.keys(subjectsMap).length === 0 && (
-              <div className="bg-white p-8 rounded-2xl text-center text-slate-500 font-bold border border-slate-200">No data found. Take a test to see your progress!</div>
-            )}
-            
-            {Object.keys(subjectsMap).sort().map(sub => {
-              const subData = subjectsMap[sub];
-              const isExpanded = expandedProgressSubject === sub;
-              const subProgress = Math.round((subData.completed / subData.total) * 100) || 0;
+  if (loading) return <div className="flex justify-center items-center h-screen bg-slate-50"><p className="font-bold text-slate-400">Loading database...</p></div>;
 
-              return (
-                <div key={sub} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden transition-all duration-300">
-                  <button 
-                    onClick={() => setExpandedProgressSubject(isExpanded ? '' : sub)}
-                    className="w-full p-5 flex items-center justify-between bg-white hover:bg-slate-50 transition-colors"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-2xl shadow-inner">📚</div>
-                      <div className="text-left">
-                        <h2 className="text-lg font-black text-slate-800 leading-none mb-1">{sub}</h2>
-                        <p className="text-xs font-bold text-slate-400">{subData.completed} of {subData.total} Questions Completed</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="hidden sm:flex items-center gap-2">
-                        <div className="text-xs font-black text-indigo-600 w-8 text-right">{subProgress}%</div>
-                        <div className="w-24 h-2.5 bg-slate-100 rounded-full overflow-hidden shadow-inner">
-                          <div className="h-full bg-indigo-500 rounded-full transition-all duration-1000" style={{ width: `${subProgress}%` }} />
-                        </div>
-                      </div>
-                      <span className={`text-slate-300 text-lg transition-transform duration-300 ${isExpanded ? 'rotate-90' : ''}`}>▶</span>
-                    </div>
-                  </button>
-
-                  {isExpanded && (
-                    <div className="bg-slate-50 border-t border-slate-100 p-4 space-y-3">
-                      {subData.lessons.sort((a,b) => a.chapterStr.localeCompare(b.chapterStr)).map((stat, idx) => {
-                        const remaining = stat.total - stat.completed;
-                        const isDone = remaining <= 0;
-                        const chapParts = stat.chapterStr.split('|||');
-                        const displayChap = chapParts[0];
-                        const displayLes = chapParts.length > 1 ? chapParts[1] : '';
-                        const lesProgress = Math.round((stat.completed / stat.total) * 100) || 0;
-
-                        return (
-                          <div 
-                            key={idx} 
-                            onClick={() => {
-                               setSelectedSubject(stat.subject);
-                               setSelectedChapter(displayChap);
-                               if (displayLes) setSelectedLesson(displayLes);
-                               setShowProgress(false);
-                            }}
-                            className={`p-4 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all cursor-pointer hover:shadow-md ${isDone ? 'bg-emerald-50/50 border-emerald-100 hover:bg-emerald-50' : 'bg-white border-slate-200 hover:bg-slate-50'}`}
-                          >
-                            
-                            <div className="flex-1">
-                              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{displayChap}</p>
-                              <h3 className={`text-sm font-bold ${isDone ? 'text-emerald-700' : 'text-slate-700'}`}>
-                                {displayLes || 'Root MCQs'}
-                              </h3>
-                            </div>
-                            
-                            <div className="flex items-center gap-6">
-                              <div className="flex flex-col items-end">
-                                <span className={`text-xs font-black ${isDone ? 'text-emerald-600' : 'text-indigo-600'}`}>
-                                  {stat.completed} / {stat.total}
-                                </span>
-                                <div className="w-20 h-1.5 bg-slate-200 rounded-full overflow-hidden mt-1">
-                                  <div className={`h-full rounded-full ${isDone ? 'bg-emerald-500' : 'bg-indigo-400'}`} style={{ width: `${lesProgress}%` }} />
-                                </div>
-                              </div>
-                              
-                              <div className="w-24 flex justify-end">
-                                {isDone ? (
-                                  <button 
-                                    disabled={isResetting}
-                                    onClick={(e) => { e.stopPropagation(); handleReplay(stat.subject, stat.chapterStr); }}
-                                    className="px-3 py-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 font-black text-[10px] uppercase tracking-widest rounded-lg transition-colors flex items-center gap-1 disabled:opacity-50"
-                                  >
-                                    <span>🔄</span> Replay
-                                  </button>
-                                ) : (
-                                  <span className="px-3 py-1 bg-slate-100 text-slate-500 font-bold text-[10px] uppercase tracking-widest rounded-lg">
-                                    {remaining} Left
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    );
+  // Calculate current active stats
+  const stSub = selectedSubject ? getStats(selectedSubject, '', '') : null;
+  const stChap = selectedChapter ? getStats(selectedSubject, selectedChapter, '') : null;
+  const stLes = selectedLesson ? getStats(selectedSubject, selectedChapter, selectedLesson) : null;
+  
+  let activeStats = null;
+  let activeTitle = '';
+  let activeSubtitle = '';
+  
+  if (selectedLesson && stLes) {
+     activeStats = stLes;
+     activeTitle = selectedLesson;
+     activeSubtitle = 'Lesson Progress';
+  } else if (selectedChapter && stChap) {
+     const chapStats = Object.values(progressStats)
+       .filter(st => st.subject === selectedSubject && st.chap === selectedChapter)
+       .reduce((acc, st) => ({ total: acc.total + st.total, completed: acc.completed + st.completed }), { total: 0, completed: 0 });
+     activeStats = chapStats;
+     activeTitle = selectedChapter;
+     activeSubtitle = 'Chapter Progress';
+  } else if (selectedSubject) {
+     const subStats = Object.values(progressStats)
+       .filter(st => st.subject === selectedSubject)
+       .reduce((acc, st) => ({ total: acc.total + st.total, completed: acc.completed + st.completed }), { total: 0, completed: 0 });
+     activeStats = subStats;
+     activeTitle = selectedSubject;
+     activeSubtitle = 'Subject Progress';
   }
 
   return (
@@ -242,10 +168,12 @@ export default function McqDashboard({ setScreen, startTest }) {
             <select 
               value={selectedSubject} 
               onChange={e => { setSelectedSubject(e.target.value); setSelectedChapter(''); setSelectedLesson(''); }}
-              className="w-full p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-700"
+              className="w-full p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 font-medium"
             >
               <option value="">Select a Subject...</option>
-              {Object.keys(hierarchy).map(s => <option key={s} value={s}>{s}</option>)}
+              {Object.keys(hierarchy).sort().map(s => {
+                 return <option key={s} value={s}>{s}</option>;
+              })}
             </select>
           </div>
 
@@ -255,10 +183,12 @@ export default function McqDashboard({ setScreen, startTest }) {
                <select 
                  value={selectedChapter} 
                  onChange={e => { setSelectedChapter(e.target.value); setSelectedLesson(''); }}
-                 className="w-full p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-700"
+                 className="w-full p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 font-medium"
                >
                  <option value="">All Chapters</option>
-                 {Object.keys(hierarchy[selectedSubject] || {}).map(c => <option key={c} value={c}>{c}</option>)}
+                 {Object.keys(hierarchy[selectedSubject] || {}).sort().map(c => {
+                    return <option key={c} value={c}>{c}</option>;
+                 })}
                </select>
             </div>
           )}
@@ -269,62 +199,99 @@ export default function McqDashboard({ setScreen, startTest }) {
               <select 
                 value={selectedLesson} 
                 onChange={e => setSelectedLesson(e.target.value)}
-                className="w-full p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-700"
+                className="w-full p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 font-medium"
               >
                 <option value="">All Lessons</option>
-                {hierarchy[selectedSubject][selectedChapter].map(l => <option key={l} value={l}>{l}</option>)}
+                {hierarchy[selectedSubject][selectedChapter].sort().map(l => {
+                   const lSt = getStats(selectedSubject, selectedChapter, l);
+                   return <option key={l} value={l}>{l} ({lSt.completed}/{lSt.total})</option>;
+                })}
               </select>
             </div>
           )}
+          
+          {/* Progress Display Card */}
+          {activeStats && activeStats.total > 0 && (
+            <div className="mt-6 p-5 rounded-xl border border-indigo-100 bg-indigo-50/50">
+              <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">{activeSubtitle}</p>
+              <h3 className="text-lg font-black text-indigo-900 leading-tight mt-0.5 mb-4">{activeTitle}</h3>
+              
+              <div className="flex items-end justify-between mb-2">
+                <span className="text-2xl font-black text-indigo-600">{Math.round((activeStats.completed / activeStats.total) * 100)}%</span>
+                <span className="text-xs font-bold text-indigo-400 mb-1">{activeStats.completed} / {activeStats.total} completed</span>
+              </div>
+              
+              <div className="w-full h-3 bg-indigo-100 rounded-full overflow-hidden">
+                <div className="h-full bg-indigo-500 rounded-full transition-all duration-1000" style={{ width: `${(activeStats.completed / activeStats.total) * 100}%` }} />
+              </div>
 
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Number of Questions</label>
-            <input 
-              type="number" 
-              min="5" max="100" 
-              value={testSize} 
-              onChange={e => setTestSize(Number(e.target.value))}
-              className="w-full p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-700"
-            />
-          </div>
+              {selectedLesson && activeStats.completed >= activeStats.total && (
+                <div className="flex gap-2 mt-5">
+                  <button 
+                    disabled={isResetting}
+                    onClick={() => handleReview(selectedSubject, `${selectedChapter}|||${selectedLesson}`)}
+                    className="flex-1 py-2.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 font-black text-[10px] md:text-xs uppercase tracking-widest rounded-xl transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-1"
+                  >
+                    <span className="text-sm">👀</span> View Results
+                  </button>
+                  <button 
+                    disabled={isResetting}
+                    onClick={() => handleReplay(selectedSubject, `${selectedChapter}|||${selectedLesson}`)}
+                    className="flex-1 py-2.5 bg-white border border-indigo-200 hover:border-indigo-400 text-indigo-600 font-black text-[10px] md:text-xs uppercase tracking-widest rounded-xl transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-1"
+                  >
+                    <span className="text-sm">🔄</span> Reset
+                  </button>
+                </div>
+              )}
 
-          <div className="flex flex-col sm:flex-row gap-3 mt-4">
-            <button 
-              onClick={() => {
-                 let finalChapter = selectedChapter;
-                 if (selectedLesson) {
-                    finalChapter = `${selectedChapter}|||${selectedLesson}`;
-                 }
-                 startTest({ subject: selectedSubject, chapter: finalChapter, size: testSize, mode: 'PRACTICE' });
-              }}
-              disabled={!selectedSubject}
-              className={`flex-1 py-3 rounded-xl font-black text-white uppercase tracking-wider text-xs md:text-sm shadow-sm transition-colors ${selectedSubject ? 'bg-[#4F86F7] hover:bg-blue-600' : 'bg-slate-300 cursor-not-allowed'}`}
-            >
-              📖 Practice
-              <div className="text-[10px] opacity-80 font-bold normal-case mt-0.5">Instant Answers</div>
-            </button>
-            <button 
-              onClick={() => {
-                 let finalChapter = selectedChapter;
-                 if (selectedLesson) {
-                    finalChapter = `${selectedChapter}|||${selectedLesson}`;
-                 }
-                 startTest({ subject: selectedSubject, chapter: finalChapter, size: testSize, mode: 'TEST', timeLimitMinutes: testSize });
-              }}
-              disabled={!selectedSubject}
-              className={`flex-1 py-3 rounded-xl font-black text-white uppercase tracking-wider text-xs md:text-sm shadow-sm transition-colors ${selectedSubject ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-slate-300 cursor-not-allowed'}`}
-            >
-              ⏱ Test Mode
-              <div className="text-[10px] opacity-80 font-bold normal-case mt-0.5">{testSize} Min Timer</div>
-            </button>
-          </div>
+              <div className="mt-4 space-y-3 border-t border-indigo-100 pt-4">
+                <div className="flex justify-between items-center bg-white px-3 py-2 rounded-xl border border-indigo-100">
+                  <span className="text-xs font-bold text-indigo-400 uppercase">Questions</span>
+                  <input 
+                    type="number" min="1" max={activeStats.total} 
+                    value={Math.min(testSize, activeStats.total)} 
+                    onChange={e => setTestSize(Math.min(Number(e.target.value), activeStats.total))}
+                    className="w-16 text-sm font-black text-indigo-700 bg-transparent focus:outline-none text-right"
+                  />
+                </div>
+                <div className="flex gap-3">
+                  <button 
+                    onClick={() => {
+                       let finalChapter = selectedChapter;
+                       if (selectedLesson) finalChapter = `${selectedChapter}|||${selectedLesson}`;
+                       startTest({ subject: selectedSubject, chapter: finalChapter, size: testSize, mode: 'PRACTICE' });
+                    }}
+                    className="flex-1 py-3.5 bg-gradient-to-br from-blue-400 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white font-black text-[10px] md:text-xs uppercase tracking-widest rounded-xl transition-all shadow-md hover:shadow-lg active:scale-95 flex flex-col items-center justify-center gap-1 border border-blue-300"
+                  >
+                    <span className="text-lg">📖</span>
+                    <span>Practice</span>
+                  </button>
+                  <button 
+                    onClick={() => {
+                       let finalChapter = selectedChapter;
+                       if (selectedLesson) finalChapter = `${selectedChapter}|||${selectedLesson}`;
+                       startTest({ subject: selectedSubject, chapter: finalChapter, size: testSize, mode: 'TEST', timeLimitMinutes: testSize });
+                    }}
+                    className="flex-1 py-3.5 bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 text-white font-black text-[10px] md:text-xs uppercase tracking-widest rounded-xl transition-all shadow-md hover:shadow-lg active:scale-95 flex flex-col items-center justify-center gap-1 border border-indigo-400"
+                  >
+                    <span className="text-lg">⏱</span>
+                    <span>Test Mode</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {!selectedSubject && (
+            <div className="mt-6 p-6 rounded-xl border border-slate-200 bg-slate-50 text-center">
+              <span className="text-2xl mb-2 block">👆</span>
+              <p className="text-xs font-bold text-slate-400">Select a subject above to launch.</p>
+            </div>
+          )}
         </div>
       </div>
       
       <div className="w-full max-w-md space-y-3 mt-8">
-        <button onClick={() => setShowProgress(true)} className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-extrabold py-3.5 rounded-xl text-xs uppercase tracking-wider transition-colors">
-          📊 View Progress Tracker
-        </button>
         <button onClick={() => setScreen('PLAYER_HOME')} className="w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-extrabold py-3.5 rounded-xl text-xs uppercase tracking-wider transition-colors">
           🧩 Crack-Criteria
         </button>

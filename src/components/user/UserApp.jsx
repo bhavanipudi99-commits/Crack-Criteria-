@@ -167,7 +167,7 @@ export default function UserApp() {
   return (
     <div className="w-full min-h-screen">
       {screen === 'AUTH' && <AuthScreen setScreen={setScreen} adminPassword={adminPassword} setAdminPassword={setAdminPassword} />}
-      {screen === 'MCQ_DASHBOARD' && <McqDashboard setScreen={setScreen} startTest={startMcqTest} adminPassword={adminPassword} />}
+      {screen === 'MCQ_DASHBOARD' && <McqDashboard setScreen={setScreen} startTest={startMcqTest} viewPastResults={(results) => { setMcqTestResults(results); setMcqTestTime(0); setMcqTestConfig({ mode: 'REVIEW' }); setScreen('MCQ_RESULTS'); }} adminPassword={adminPassword} />}
       {screen === 'MCQ_TEST' && <TestRunnerScreen testConfig={mcqTestConfig} finishTest={finishMcqTest} setScreen={setScreen} />}
       {screen === 'MCQ_RESULTS' && <TestResultsScreen results={mcqTestResults} totalTimeSeconds={mcqTestTime} setScreen={setScreen} mode={mcqTestConfig?.mode} />}
       {screen === 'PLAYER_HOME' && <PlayerHome difficulty={difficulty} setDifficulty={setDifficulty} activeGameMode={activeGameMode} setActiveGameMode={setActiveGameMode} startGame={engine.startGame} appSubjects={appSubjects} appChapters={appChapters} appSubChapters={appSubChapters} expandedChapters={expandedChapters} setExpandedChapters={setExpandedChapters} canvasConfigs={canvasConfigs} setScreen={setScreen} adminPassword={adminPassword} />}

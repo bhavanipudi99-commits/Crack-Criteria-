@@ -68,7 +68,31 @@ export default function TestRunnerScreen({ testConfig, finishTest, setScreen, is
           finalQuestions = data.sort(() => 0.5 - Math.random()).slice(0, testConfig.size);
         }
 
-        setQuestions(finalQuestions);
+        const shuffleQuestionsAndOptions = (qs) => {
+          const shuffledQs = [...qs].sort(() => 0.5 - Math.random());
+          
+          return shuffledQs.map(q => {
+            if (!q.options || q.options.length === 0) return q;
+            
+            const letterToIndex = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
+            const indexToLetter = { 0: 'A', 1: 'B', 2: 'C', 3: 'D' };
+            
+            const correctIdx = letterToIndex[q.correct_answer];
+            
+            let opts = q.options.map((optText, idx) => ({ text: optText, originalIdx: idx }));
+            opts = opts.sort(() => 0.5 - Math.random());
+            
+            const newCorrectIdx = opts.findIndex(o => o.originalIdx === correctIdx);
+            
+            return {
+              ...q,
+              options: opts.map(o => o.text),
+              correct_answer: newCorrectIdx !== -1 ? indexToLetter[newCorrectIdx] : q.correct_answer
+            };
+          });
+        };
+
+        setQuestions(shuffleQuestionsAndOptions(finalQuestions));
       } catch (err) {
         console.error("Failed to load questions:", err);
         alert('Failed to load questions');
@@ -201,7 +225,18 @@ export default function TestRunnerScreen({ testConfig, finishTest, setScreen, is
       {/* Top Header */}
       <div className="w-full max-w-3xl mx-auto flex justify-between items-center mb-8">
         <div className="text-sm font-extrabold text-black uppercase tracking-wider flex items-center gap-4">
-          <span>{testConfig.mode === 'PRACTICE' ? '📖 Practice Mode' : '⏱ Test Mode'} <span className="opacity-40">|</span> Q {currentIndex + 1}/{questions.length}</span>
+          <button
+            onClick={() => {
+              if (window.confirm("Are you sure you want to quit? Your progress for this session will be lost.")) {
+                setScreen('MCQ_DASHBOARD');
+              }
+            }}
+            className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] md:text-xs rounded-xl transition-colors shadow-sm"
+            title="Quit Test"
+          >
+            ✖ Quit
+          </button>
+          <span>{testConfig.mode === 'PRACTICE' ? '📖 Practice' : '⏱ Test'} <span className="opacity-40">|</span> Q {currentIndex + 1}/{questions.length}</span>
           {!isEditingCurrent && !isReportingError && (
             <button 
               onClick={() => setIsReportingError(true)}
