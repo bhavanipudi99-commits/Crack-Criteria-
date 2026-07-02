@@ -46,7 +46,10 @@ export default function TestResultsScreen({ results, totalTimeSeconds, setScreen
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">
                     Question {idx + 1}
                   </span>
-                  <p className="text-slate-700 font-bold leading-relaxed">{q.question}</p>
+                  <div 
+                    className="text-slate-700 font-bold leading-relaxed" 
+                    dangerouslySetInnerHTML={{ __html: q.question }} 
+                  />
                 </div>
               </div>
 
@@ -85,7 +88,10 @@ export default function TestResultsScreen({ results, totalTimeSeconds, setScreen
               {q.explanation && (
                 <div className="ml-12 mt-4 p-4 rounded-xl bg-blue-50 border border-blue-100">
                   <p className="text-xs font-black text-blue-800 uppercase tracking-widest mb-2">Explanation</p>
-                  <p className="text-sm text-blue-900 leading-relaxed whitespace-pre-wrap">{q.explanation}</p>
+                  <div 
+                    className="text-sm text-blue-900 leading-relaxed whitespace-pre-wrap"
+                    dangerouslySetInnerHTML={{ __html: q.explanation }}
+                  />
                 </div>
               )}
             </div>
