@@ -193,7 +193,35 @@ export default function UserApp() {
   return (
     <div className="w-full min-h-screen relative">
 
-
+      {/* Floating Brand Watermark */}
+      {session && screen !== 'AUTH' && (
+        <>
+          <style>{`
+            @keyframes floatWatermark {
+              0%   { top: 15%; left: 10%; opacity: 0.07; }
+              20%  { top: 60%; left: 70%; opacity: 0.05; }
+              40%  { top: 80%; left: 20%; opacity: 0.08; }
+              60%  { top: 30%; left: 80%; opacity: 0.05; }
+              80%  { top: 70%; left: 40%; opacity: 0.07; }
+              100% { top: 15%; left: 10%; opacity: 0.07; }
+            }
+          `}</style>
+          <div
+            className="fixed pointer-events-none z-[9999] select-none"
+            style={{
+              animation: 'floatWatermark 30s ease-in-out infinite',
+              fontWeight: 900,
+              fontSize: '1.1rem',
+              color: '#0f172a',
+              letterSpacing: '0.15em',
+              transform: 'rotate(-20deg)',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Estudiante-DM
+          </div>
+        </>
+      )}
       {screen === 'AUTH' && <AuthScreen setScreen={setScreen} adminPassword={adminPassword} setAdminPassword={setAdminPassword} />}
       {screen === 'MCQ_DASHBOARD' && <McqDashboard setScreen={setScreen} startTest={startMcqTest} viewPastResults={(results) => { setMcqTestResults(results); setMcqTestTime(0); setMcqTestConfig({ mode: 'REVIEW' }); setScreen('MCQ_RESULTS'); }} adminPassword={adminPassword} />}
       {screen === 'MCQ_TEST' && <TestRunnerScreen testConfig={mcqTestConfig} finishTest={finishMcqTest} setScreen={setScreen} />}
