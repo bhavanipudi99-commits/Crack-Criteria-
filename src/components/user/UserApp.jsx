@@ -192,17 +192,7 @@ export default function UserApp() {
 
   return (
     <div className="w-full min-h-screen relative">
-      {/* Anti-Piracy Logo Watermark Overlay */}
-      {session && (
-        <div className="fixed inset-0 pointer-events-none z-[9999] overflow-hidden"
-          style={{
-            backgroundImage: 'url(/logo.jpg)',
-            backgroundSize: '180px 180px',
-            backgroundRepeat: 'repeat',
-            opacity: 0.04,
-          }}
-        />
-      )}
+
 
       {screen === 'AUTH' && <AuthScreen setScreen={setScreen} adminPassword={adminPassword} setAdminPassword={setAdminPassword} />}
       {screen === 'MCQ_DASHBOARD' && <McqDashboard setScreen={setScreen} startTest={startMcqTest} viewPastResults={(results) => { setMcqTestResults(results); setMcqTestTime(0); setMcqTestConfig({ mode: 'REVIEW' }); setScreen('MCQ_RESULTS'); }} adminPassword={adminPassword} />}
