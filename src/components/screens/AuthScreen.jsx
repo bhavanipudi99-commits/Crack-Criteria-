@@ -45,7 +45,12 @@ export default function AuthScreen({ setScreen, adminPassword, setAdminPassword 
         setErrorMsg('Sign up successful! Please log in, or check email to confirm.');
       }
     } catch (err) {
-      setErrorMsg(err.message || 'Authentication failed');
+      // Specific handling for rate limit / email quota errors
+      if (err.message && err.message.toLowerCase().includes('email limit')) {
+        setErrorMsg('Email sending limit reached. Please try again later or contact support.');
+      } else {
+        setErrorMsg(err.message || 'Authentication failed');
+      }
     } finally {
       setLoading(false);
     }
