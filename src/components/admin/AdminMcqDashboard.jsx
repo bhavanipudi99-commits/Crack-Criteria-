@@ -660,7 +660,7 @@ export default function AdminMcqDashboard() {
 
             <div className="p-6 overflow-y-auto flex-1 flex flex-col space-y-4">
               <div className="bg-blue-50 text-blue-800 p-4 rounded-xl text-sm font-bold border border-blue-200">
-                Paste your raw Markdown text below. The parser expects questions to start with a number (e.g., `1.` or `### Question 1`), options as `A. text`, and the answer block to contain `> [!success]` and `Answer: A`.
+                Paste your raw Markdown text below. The parser expects questions to start with a number (e.g., `1.` or `### Question 1`), options as `A. text`, and the answer block to contain `&gt; [!success]` and `Answer: A`.
               </div>
               
               <textarea 
